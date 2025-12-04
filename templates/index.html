@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech News RSS Slideshow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            height: 80vh;
+            position: relative;
+        }
+
+        .slide {
+            display: none;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 60px;
+            height: 100%;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            animation: fadeIn 1s ease-in;
+            overflow-y: auto;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .slide-content {
+            display: flex;
+            gap: 40px;
+            flex-grow: 1;
+            align-items: center;
+        }
+
+        .slide-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .slide-image-container {
+            flex: 1;
+            min-width: 0;
+            max-width: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide-image {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            object-fit: contain;
+        }
+
+        .slide.no-image .slide-content {
+            flex-direction: column;
+        }
+
+        .slide.no-image .slide-image-container {
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-header {
+            margin-bottom: 30px;
+        }
+
+        .source {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .title {
+            font-size: 3.5em;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .summary {
+            font-size: 1.5em;
+            line-height: 1.6;
+            opacity: 0.95;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .published {
+            font-size: 1.1em;
+            opacity: 0.8;
+        }
+
+        .slide-counter {
+            font-size: 1.1em;
+            opacity: 0.8;
+        }
+
+        .loading {
+            text-align: center;
+            font-size: 2em;
+        }
+
+        .error {
+            text-align: center;
+            color: #ff6b6b;
+            font-size: 1.5em;
+            padding: 40px;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Scrollbar styling */
+        .slide::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .slide::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .slide::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        .slide::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2em;
+            }
+            .summary {
+                font-size: 1.2em;
+            }
+            .container {
+                width: 95%;
+                padding: 20px;
+            }
+            .slide {
+                padding: 30px;
+            }
+            .slide-content {
+                flex-direction: column;
+            }
+            .slide-image-container {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="container">
+        <div class="loading" id="loading">Loading tech news...</div>
+        <div class="error" id="error" style="display: none;"></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="toggleFullscreen()">Fullscreen</button>
+        <button class="btn" onclick="refreshFeeds()">Refresh</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        let slides = [];
+        const SLIDE_DURATION = 10000; // 10 seconds per slide
+        let slideInterval;
+
+        // Fetch feeds from API
+        async function fetchFeeds() {
+            try {
+                const response = await fetch('/api/feeds');
+                const data = await response.json();
+                
+                if (data.success && data.items.length > 0) {
+                    slides = data.items;
+                    renderSlides();
+                    startSlideshow();
+                    document.getElementById('loading').style.display = 'none';
+                } else {
+                    showError('No news items available. Please try refreshing.');
+                }
+            } catch (error) {
+                console.error('Error fetching feeds:', error);
+                showError('Failed to load news. Please check your connection and try again.');
+            }
+        }
+
+        // Render slides
+        function renderSlides() {
+            const container = document.getElementById('container');
+            container.innerHTML = '';
+            
+            slides.forEach((item, index) => {
+                const slide = document.createElement('div');
+                const hasImage = item.image && item.image.trim() !== '';
+                
+                if (!hasImage) {
+                    slide.className = `slide no-image ${index === 0 ? 'active' : ''}`;
+                } else {
+                    slide.className = `slide ${index === 0 ? 'active' : ''}`;
+                }
+                
+                // Clean HTML from summary
+                const summary = cleanHtml(item.summary);
+                
+                const imageHtml = hasImage ? `
+                    <div class="slide-image-container">
+                        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="slide-image" 
+                             onerror="this.style.display='none'; this.parentElement.parentElement.classList.add('no-image');">
+                    </div>
+                ` : '';
+                
+                slide.innerHTML = `
+                    <div class="slide-header">
+                        <div class="source">${escapeHtml(item.source)}</div>
+                        <h1 class="title">${escapeHtml(item.title)}</h1>
+                    </div>
+                    <div class="slide-content">
+                        <div class="slide-text">
+                            <div class="summary">${summary}</div>
+                        </div>
+                        ${imageHtml}
+                    </div>
+                    <div class="footer">
+                        <div class="published">${formatDate(item.published)}</div>
+                        <div class="slide-counter">${index + 1} / ${slides.length}</div>
+                    </div>
+                `;
+                
+                container.appendChild(slide);
+            });
+        }
+
+        // Clean HTML tags but preserve text
+        function cleanHtml(html) {
+            const div = document.createElement('div');
+            div.innerHTML = html;
+            let text = div.textContent || div.innerText || '';
+            // Limit length
+            if (text.length > 500) {
+                text = text.substring(0, 500) + '...';
+            }
+            return escapeHtml(text);
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        // Start slideshow
+        function startSlideshow() {
+            if (slideInterval) {
+                clearInterval(slideInterval);
+            }
+            
+            slideInterval = setInterval(() => {
+                nextSlide();
+            }, SLIDE_DURATION);
+        }
+
+        // Show next slide
+        function nextSlide() {
+            const allSlides = document.querySelectorAll('.slide');
+            if (allSlides.length === 0) return;
+            
+            allSlides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % allSlides.length;
+            allSlides[currentSlide].classList.add('active');
+        }
+
+        // Show previous slide
+        function previousSlide() {
+            const allSlides = document.querySelectorAll('.slide');
+            if (allSlides.length === 0) return;
+            
+            allSlides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide - 1 + allSlides.length) % allSlides.length;
+            allSlides[currentSlide].classList.add('active');
+        }
+
+        // Show error message
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // Toggle fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error('Error attempting to enable fullscreen:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Refresh feeds
+        async function refreshFeeds() {
+            try {
+                const response = await fetch('/api/refresh');
+                const data = await response.json();
+                if (data.success) {
+                    await fetchFeeds();
+                }
+            } catch (error) {
+                console.error('Error refreshing feeds:', error);
+            }
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                previousSlide();
+            } else if (e.key === 'f' || e.key === 'F') {
+                toggleFullscreen();
+            } else if (e.key === 'r' || e.key === 'R') {
+                refreshFeeds();
+            }
+        });
+
+        // Auto-refresh feeds every 30 minutes
+        setInterval(fetchFeeds, 30 * 60 * 1000);
+
+        // Initial load
+        fetchFeeds();
+    </script>
+</body>
+</html>
+
