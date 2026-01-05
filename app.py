@@ -17,16 +17,26 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Popular tech news RSS feeds
+# Tech and security news RSS feeds
 RSS_FEEDS = [
+    # Security News (Primary Focus)
+    "https://www.bleepingcomputer.com/feed/",
+    "https://krebsonsecurity.com/feed/",
+    "https://www.schneier.com/feed/",
+    "https://thehackernews.com/feeds/posts/default",
+    "https://www.darkreading.com/rss.xml",
+    "https://threatpost.com/feed/",
+    "https://www.securityweek.com/feed/",
+    "https://www.helpnetsecurity.com/feed/",
+    "https://www.securityaffairs.com/feed",
+    "https://grahamcluley.com/feed/",
+    "https://isc.sans.edu/rssfeed.xml",
+    "https://packetstormsecurity.com/news/feed/",
+    "https://www.securityboulevard.com/feed/",
+    "https://portswigger.net/daily-swig/rss",
+    # Quality Tech News (Limited)
     "https://feeds.feedburner.com/oreilly/radar",
-    "https://www.wired.com/feed/rss",
-    "https://techcrunch.com/feed/",
-    "https://feeds.arstechnica.com/arstechnica/index",
-    "https://www.theverge.com/rss/index.xml",
-    "https://feeds.feedburner.com/venturebeat/SZYF",
-    "https://www.engadget.com/rss.xml",
-    "https://feeds.feedburner.com/oreilly/radar",
+    "https://lwn.net/headlines/rss",
 ]
 
 # Cache for RSS feeds (refresh every 5 minutes)
@@ -195,5 +205,6 @@ if __name__ == '__main__':
     
     # Run the Flask app
     # Use host='0.0.0.0' to make it accessible on the network
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # debug=True enables hot reloading and better error messages
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
