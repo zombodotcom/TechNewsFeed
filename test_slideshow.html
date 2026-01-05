@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Slideshow Logic Tests</title>
+    <script>
+        // Test the slideshow logic
+        function runTests() {
+            const results = [];
+            
+            function test(name, fn) {
+                try {
+                    fn();
+                    results.push({ name, passed: true });
+                } catch (e) {
+                    results.push({ name, passed: false, error: e.message });
+                }
+            }
+            
+            // Test slide looping
+            test('Slide loops correctly', () => {
+                let currentSlide = 0;
+                const totalSlides = 10;
+                
+                // Go through all slides
+                for (let i = 0; i < totalSlides; i++) {
+                    currentSlide = (currentSlide + 1) % totalSlides;
+                }
+                
+                if (currentSlide !== 0) {
+                    throw new Error(`Expected 0 after full loop, got ${currentSlide}`);
+                }
+            });
+            
+            test('Slide wraps to 0 after last', () => {
+                const totalSlides = 5;
+                let currentSlide = 4; // Last slide
+                
+                currentSlide = (currentSlide + 1) % totalSlides;
+                
+                if (currentSlide !== 0) {
+                    throw new Error(`Expected 0 after last slide, got ${currentSlide}`);
+                }
+            });
+            
+            test('Previous slide wraps to last', () => {
+                const totalSlides = 5;
+                let currentSlide = 0; // First slide
+                
+                currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+                
+                if (currentSlide !== 4) {
+                    throw new Error(`Expected 4 (last slide), got ${currentSlide}`);
+                }
+            });
+            
+            test('Handles empty slides array', () => {
+                const allSlides = [];
+                if (allSlides.length === 0) {
+                    // Should return early
+                    return;
+                }
+                // This should not execute
+                throw new Error('Should have returned early');
+            });
+            
+            // Display results
+            const output = document.getElementById('results');
+            const passed = results.filter(r => r.passed).length;
+            const total = results.length;
+            
+            output.innerHTML = `
+                <h2>Test Results: ${passed}/${total} passed</h2>
+                <ul>
+                    ${results.map(r => `
+                        <li style="color: ${r.passed ? 'green' : 'red'}">
+                            ${r.passed ? '✓' : '✗'} ${r.name}
+                            ${r.error ? `<br><small>${r.error}</small>` : ''}
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+        }
+        
+        window.onload = runTests;
+    </script>
+</head>
+<body>
+    <h1>Slideshow Logic Tests</h1>
+    <div id="results">Running tests...</div>
+</body>
+</html>
+

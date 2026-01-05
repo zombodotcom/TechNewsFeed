@@ -1,4 +1,6 @@
 Flask==3.0.0
 feedparser==6.0.12
 Werkzeug==3.0.1
+pytest==7.4.3
+pytest-cov==4.1.0
 

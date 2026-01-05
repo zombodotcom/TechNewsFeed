@@ -59,6 +59,38 @@
             visibility: visible;
         }
 
+        /* Scam tip styling */
+        .scam-tip {
+            background: rgba(255, 96, 96, 0.18);
+            border: 1px solid rgba(255, 96, 96, 0.35);
+        }
+
+        .scam-badge {
+            display: inline-block;
+            background: rgba(255, 96, 96, 0.9);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: 700;
+            margin-right: 10px;
+        }
+
+        .scam-avoid {
+            margin-top: 10px;
+            font-weight: 700;
+            color: #ffe6e6;
+        }
+
+        /* Let scam tips show more text */
+        .scam-tip .summary {
+            display: block;
+            -webkit-line-clamp: unset;
+            -webkit-box-orient: unset;
+            overflow: visible;
+            text-overflow: unset;
+        }
+
         .slide-content {
             display: flex;
             gap: 30px;
@@ -130,7 +162,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             display: -webkit-box;
-            -webkit-line-clamp: 4;
+            -webkit-line-clamp: 6;
             -webkit-box-orient: vertical;
         }
 
@@ -141,7 +173,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             display: -webkit-box;
-            -webkit-line-clamp: 10;
+            -webkit-line-clamp: 14;
             -webkit-box-orient: vertical;
         }
 
@@ -392,11 +424,12 @@
     <script>
         let currentSlide = 0;
         let slides = [];
+        let scamTips = [];
         const SLIDE_DURATION = 25000; // 25 seconds per slide
         let slideInterval;
 
         // Fetch feeds from API
-        async function fetchFeeds() {
+        async function fetchFeeds(retryCount = 0) {
             try {
                 document.getElementById('loading').textContent = 'Loading tech news...';
                 const response = await fetch('/api/feeds');
@@ -404,16 +437,53 @@
                 
                 if (data.success && data.items.length > 0) {
                     slides = data.items;
+                    await fetchScamTips(); // fetch static scam tips
                     document.getElementById('loading').textContent = 'Loading images...';
                     await renderSlides();
-                    document.getElementById('loading').style.display = 'none';
+                    
+                    // Hide loading and start slideshow
+                    const loadingEl = document.getElementById('loading');
+                    if (loadingEl) {
+                        loadingEl.style.display = 'none';
+                    }
+                    
+                    console.log('About to call startSlideshow()...');
+                    // Start slideshow immediately after rendering
                     startSlideshow();
+                    console.log('startSlideshow() called');
+                } else if (retryCount < 10) {
+                    // Wait and retry if data is still loading (max 10 retries = ~10 seconds)
+                    document.getElementById('loading').textContent = 'Loading tech news...';
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    return fetchFeeds(retryCount + 1);
                 } else {
                     showError('No news items available. Please try refreshing.');
                 }
             } catch (error) {
                 console.error('Error fetching feeds:', error);
-                showError('Failed to load news. Please check your connection and try again.');
+                if (retryCount < 5) {
+                    // Retry on error too
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    return fetchFeeds(retryCount + 1);
+                } else {
+                    showError('Failed to load news. Please check your connection and try again.');
+                }
+            }
+        }
+
+        // Fetch scam tips (static JSON)
+        async function fetchScamTips() {
+            try {
+                const resp = await fetch('/api/scam-tips');
+                const data = await resp.json();
+                if (data.success && data.items.length > 0) {
+                    scamTips = data.items;
+                } else {
+                    scamTips = [];
+                }
+            } catch (err) {
+                console.error('Error fetching scam tips:', err);
+                scamTips = [];
             }
         }
 
@@ -422,20 +492,30 @@
             const container = document.getElementById('container');
             container.innerHTML = '';
             
+            // Reset to first slide
+            currentSlide = 0;
+            console.log('Rendering', slides.length, 'news slides and', scamTips.length, 'scam tips, starting at slide 0');
+            
             const imagePromises = [];
             
-            slides.forEach((item, index) => {
+            const combined = [...scamTips, ...slides];
+
+            combined.forEach((item, index) => {
                 const slide = document.createElement('div');
                 const hasImage = item.image && item.image.trim() !== '';
                 
+                const baseClass = item.type === 'scam' ? 'slide scam-tip' : 'slide';
                 if (!hasImage) {
-                    slide.className = `slide no-image ${index === 0 ? 'active' : ''}`;
+                    slide.className = `${baseClass} no-image ${index === 0 ? 'active' : ''}`;
                 } else {
-                    slide.className = `slide ${index === 0 ? 'active' : ''}`;
+                    slide.className = `${baseClass} ${index === 0 ? 'active' : ''}`;
                 }
                 
                 // Clean HTML from summary
-                const summary = cleanHtml(item.summary);
+                const isScam = item.type === 'scam' || item.category === 'scam';
+                const summary = isScam
+                    ? `${escapeHtml(item.detail || '')}${item.avoid ? `<div class="scam-avoid">How to avoid: ${escapeHtml(item.avoid)}</div>` : ''}`
+                    : cleanHtml(item.summary || '');
                 
                 let imageHtml = '';
                 if (hasImage) {
@@ -457,10 +537,14 @@
                     `;
                 }
                 
+                const badge = isScam ? '<div class="scam-badge">SCAM TIP</div>' : '';
+                const source = isScam ? 'Scam Tips' : (item.source || 'Unknown');
+                const published = isScam ? '' : formatDate(item.published);
+
                 slide.innerHTML = `
                     <div class="slide-header">
-                        <div class="source">${escapeHtml(item.source)}</div>
-                        <h1 class="title">${escapeHtml(item.title)}</h1>
+                        <div class="source">${badge}${escapeHtml(source)}</div>
+                        <h1 class="title">${escapeHtml(item.title || 'No Title')}</h1>
                     </div>
                     <div class="slide-content">
                         <div class="slide-text">
@@ -469,8 +553,8 @@
                         ${imageHtml}
                     </div>
                     <div class="footer">
-                        <div class="published">${formatDate(item.published)}</div>
-                        <div class="slide-counter">${index + 1} / ${slides.length}</div>
+                        <div class="published">${published}</div>
+                        <div class="slide-counter">${index + 1} / ${combined.length}</div>
                     </div>
                 `;
                 
@@ -479,6 +563,11 @@
             
             // Wait for all images to load (or fail) before continuing
             await Promise.all(imagePromises);
+            
+            // Verify slides were created
+            const createdSlides = document.querySelectorAll('.slide');
+            console.log('Slides rendered:', createdSlides.length, 'slides created (scam tips + news)');
+            console.log('Active slide:', document.querySelector('.slide.active') ? 'found' : 'NOT FOUND');
         }
 
         // Clean HTML tags but preserve text
@@ -519,23 +608,64 @@
 
         // Start slideshow
         function startSlideshow() {
+            // Clear any existing interval
             if (slideInterval) {
+                console.log('Clearing existing interval before starting new one');
                 clearInterval(slideInterval);
+                slideInterval = null;
             }
             
+            const slideCount = document.querySelectorAll('.slide').length;
+            console.log('=== STARTING SLIDESHOW ===');
+            console.log('Slides available:', slideCount);
+            console.log('Slide duration:', SLIDE_DURATION, 'ms (', SLIDE_DURATION / 1000, 'seconds)');
+            console.log('Starting at slide:', currentSlide);
+            
+            // Start the interval - this should run continuously
             slideInterval = setInterval(() => {
+                const timestamp = new Date().toLocaleTimeString();
+                console.log(`[${timestamp}] Interval tick - calling nextSlide() from slide ${currentSlide}`);
                 nextSlide();
             }, SLIDE_DURATION);
+            
+            console.log('Interval ID created:', slideInterval);
+            console.log('Interval will fire every', SLIDE_DURATION / 1000, 'seconds');
+            console.log('Next automatic advance in', SLIDE_DURATION / 1000, 'seconds');
+            console.log('=== SLIDESHOW STARTED ===');
         }
 
         // Show next slide
         function nextSlide() {
             const allSlides = document.querySelectorAll('.slide');
-            if (allSlides.length === 0) return;
+            console.log('nextSlide called, total slides:', allSlides.length, 'currentSlide:', currentSlide);
             
-            allSlides[currentSlide].classList.remove('active');
+            if (allSlides.length === 0) {
+                console.warn('No slides found!');
+                return;
+            }
+            
+            // Remove active from current slide
+            const currentSlideEl = allSlides[currentSlide];
+            if (currentSlideEl) {
+                currentSlideEl.classList.remove('active');
+                console.log('Removed active from slide', currentSlide);
+            } else {
+                console.warn('Current slide element not found at index', currentSlide);
+            }
+            
+            // Move to next slide (loop back to 0 when reaching end)
+            const oldSlide = currentSlide;
             currentSlide = (currentSlide + 1) % allSlides.length;
-            allSlides[currentSlide].classList.add('active');
+            console.log('Moving from slide', oldSlide, 'to slide', currentSlide);
+            
+            // Add active to next slide
+            const nextSlideEl = allSlides[currentSlide];
+            if (nextSlideEl) {
+                nextSlideEl.classList.add('active');
+                console.log('Added active to slide', currentSlide);
+            } else {
+                console.error('Next slide element not found at index', currentSlide);
+            }
         }
 
         // Show previous slide
@@ -648,8 +778,19 @@
         updateBusinessHours();
         setInterval(updateBusinessHours, 60000); // Update every minute
 
-        // Auto-refresh feeds every 30 minutes
-        setInterval(fetchFeeds, 30 * 60 * 1000);
+        // Auto-refresh feeds every 30 minutes (but don't restart slideshow if it's running)
+        setInterval(() => {
+            console.log('Auto-refresh triggered');
+            fetchFeeds().then(() => {
+                // Only restart slideshow if it's not already running
+                if (!slideInterval) {
+                    console.log('Restarting slideshow after refresh');
+                    startSlideshow();
+                } else {
+                    console.log('Slideshow already running, skipping restart');
+                }
+            });
+        }, 30 * 60 * 1000);
 
         // Initial load
         fetchFeeds();
