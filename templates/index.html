@@ -795,10 +795,19 @@ const BADGE_COLORS = {
 };
 
 // ---- Utility ----
-function escapeHtml(text) {
+function decodeEntities(text) {
     if (!text) return '';
     const d = document.createElement('div');
-    d.textContent = text;
+    d.innerHTML = text;
+    return d.textContent || d.innerText || '';
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    // Decode HTML entities first (RSS feeds contain &#8217; etc), then re-escape safely
+    const decoded = decodeEntities(text);
+    const d = document.createElement('div');
+    d.textContent = decoded;
     return d.innerHTML;
 }
 
