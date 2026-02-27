@@ -19,20 +19,34 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Tech and security news RSS feeds
+# Curated tech news RSS feeds with categories
 RSS_FEEDS = [
-    # Security News (Primary Focus) - Only reliable, working feeds
-    "https://www.bleepingcomputer.com/feed/",
-    "https://krebsonsecurity.com/feed/",
-    "https://www.schneier.com/feed/",
-    "https://thehackernews.com/feeds/posts/default",
-    "https://www.darkreading.com/rss.xml",
-    "https://threatpost.com/feed/",
-    "https://www.securityweek.com/feed/",
-    "https://www.helpnetsecurity.com/feed/",
-    "https://www.securityaffairs.com/feed",
-    "https://grahamcluley.com/feed/",
+    # General Tech News
+    {"url": "https://www.theverge.com/rss/index.xml", "category": "tech_news", "badge": "TECH NEWS"},
+    {"url": "https://feeds.arstechnica.com/arstechnica/index", "category": "tech_news", "badge": "TECH NEWS"},
+    {"url": "https://www.engadget.com/rss.xml", "category": "tech_news", "badge": "TECH NEWS"},
+    # Tips & How-To
+    {"url": "https://www.howtogeek.com/feed/", "category": "tech_tip", "badge": "TECH TIP"},
+    {"url": "https://www.tomsguide.com/feeds/all", "category": "tech_tip", "badge": "TECH TIP"},
+    # Security & Scams
+    {"url": "https://krebsonsecurity.com/feed/", "category": "security", "badge": "SECURITY"},
+    {"url": "https://www.malwarebytes.com/blog/feed", "category": "security", "badge": "SECURITY"},
+    {"url": "https://www.bleepingcomputer.com/feed/", "category": "security", "badge": "SECURITY"},
+    # Official / Government
+    {"url": "https://www.ftc.gov/feeds/press-release-consumer-protection.xml", "category": "official", "badge": "CONSUMER ALERT"},
+    # Broader Tech
+    {"url": "https://www.wired.com/feed/rss", "category": "broad_tech", "badge": "TECH & SCIENCE"},
 ]
+
+# Badge color mapping (used by frontend)
+BADGE_COLORS = {
+    "TECH NEWS": "#D4A843",
+    "TECH TIP": "#4A7C59",
+    "SECURITY": "#2D5A3D",
+    "CONSUMER ALERT": "#C45C4A",
+    "TECH & SCIENCE": "#D4A843",
+    "SCAM ALERT": "#C45C4A",
+}
 
 # Scam tip cards for digital signage (static, concise)
 SCAM_TIPS = [
@@ -261,24 +275,25 @@ def parse_rss_feeds() -> List[Dict]:
     all_items = []
     successful_feeds = 0
     
-    for feed_url in RSS_FEEDS:
+    for feed_info in RSS_FEEDS:
+        feed_url = feed_info['url']
         try:
             logger.info(f"Fetching feed: {feed_url}")
             feed = feedparser.parse(feed_url, etag=None, modified=None)
-            
+
             if feed.bozo and feed.bozo_exception:
                 logger.warning(f"Error parsing feed {feed_url}: {feed.bozo_exception}")
                 continue
-            
+
             if not feed.entries:
                 logger.warning(f"No entries found in feed {feed_url}")
                 continue
-            
+
             successful_feeds += 1
             for entry in feed.entries[:10]:  # Limit to 10 items per feed
                 try:
                     image_url = extract_image_url(entry)
-                    
+
                     # Handle published_parsed safely
                     published_parsed = entry.get('published_parsed')
                     if published_parsed:
@@ -288,7 +303,7 @@ def parse_rss_feeds() -> List[Dict]:
                             timestamp = time.time()
                     else:
                         timestamp = time.time()
-                    
+
                     item = {
                         'title': entry.get('title', 'No Title'),
                         'link': entry.get('link', '#'),
@@ -296,13 +311,15 @@ def parse_rss_feeds() -> List[Dict]:
                         'published': entry.get('published', ''),
                         'source': feed.feed.get('title', 'Unknown Source'),
                         'timestamp': timestamp,
-                        'image': image_url
+                        'image': image_url,
+                        'category': feed_info['category'],
+                        'badge': feed_info['badge'],
                     }
                     all_items.append(item)
                 except Exception as e:
                     logger.warning(f"Error processing entry from {feed_url}: {str(e)}")
                     continue
-                
+
         except Exception as e:
             logger.error(f"Error fetching feed {feed_url}: {str(e)}")
             continue
