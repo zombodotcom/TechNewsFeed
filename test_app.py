@@ -165,6 +165,42 @@ class TestFeedCategories(unittest.TestCase):
         self.assertEqual(result[0]['badge'], 'TECH NEWS')
 
 
+class TestScamTips(unittest.TestCase):
+    def test_scam_tips_have_visual_fields(self):
+        """Test scam tips have headline, action, and optional image."""
+        from app import SCAM_TIPS
+        for tip in SCAM_TIPS:
+            self.assertIn('type', tip)
+            self.assertEqual(tip['type'], 'scam')
+            self.assertIn('headline', tip)
+            self.assertIn('action', tip)
+            self.assertIn('category', tip)
+            self.assertEqual(tip['category'], 'SCAM ALERT')
+            self.assertIn('image', tip)
+
+    def test_scam_tips_count(self):
+        """Test we have 10 scam tips."""
+        from app import SCAM_TIPS
+        self.assertEqual(len(SCAM_TIPS), 10)
+
+    def test_scam_tips_last_is_cta(self):
+        """Test last scam tip is the shop CTA."""
+        from app import SCAM_TIPS
+        self.assertIn('Just Ask Us', SCAM_TIPS[-1]['headline'])
+
+    def test_scam_tips_api_returns_new_format(self):
+        """Test /api/scam-tips returns tips with headline/action fields."""
+        self.app_client = app.test_client()
+        response = self.app_client.get('/api/scam-tips')
+        data = response.get_json()
+        self.assertTrue(data['success'])
+        self.assertGreater(len(data['items']), 0)
+        first_tip = data['items'][0]
+        self.assertIn('headline', first_tip)
+        self.assertIn('action', first_tip)
+        self.assertEqual(first_tip['type'], 'scam')
+
+
 class TestSlideshowLogic(unittest.TestCase):
     """Test slideshow JavaScript logic (simulated)."""
     
