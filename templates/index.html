@@ -3,798 +3,1346 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tech News RSS Slideshow</title>
+    <title>Northwoods Tech News</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
+        /* =============================================
+           CSS CUSTOM PROPERTIES - Northwoods Palette
+           ============================================= */
+        :root {
+            --bg-deep-pine: #1B2E1F;
+            --surface-bark: #2A2118;
+            --accent-amber: #D4A843;
+            --accent-forest: #4A7C59;
+            --text-cream: #F5F0E8;
+            --text-sage: #A8B5A0;
+            --alert-red: #C45C4A;
+            --bar-walnut: #1A1510;
+        }
+
+        /* =============================================
+           RESET & BASE
+           ============================================= */
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            overflow: hidden;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0;
-            padding: 20px;
-            padding-bottom: 140px;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1400px;
-            height: calc(100vh - 160px);
-            max-height: calc(100vh - 160px);
-            position: relative;
-        }
-
-        .slide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
+        html, body {
             height: 100%;
-            opacity: 0;
-            visibility: hidden;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            border: 1px solid rgba(255, 255, 255, 0.18);
             overflow: hidden;
-            transition: opacity 1.5s ease-in-out, visibility 1.5s ease-in-out;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg-deep-pine);
+            color: var(--text-cream);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
         }
 
-        .slide.active {
-            opacity: 1;
-            visibility: visible;
+        /* Subtle pine texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(74, 124, 89, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(212, 168, 67, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(42, 33, 24, 0.15) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
         }
 
-        /* Scam tip styling */
-        .scam-tip {
-            background: rgba(255, 96, 96, 0.18);
-            border: 1px solid rgba(255, 96, 96, 0.35);
-        }
-
-        .scam-badge {
-            display: inline-block;
-            background: rgba(255, 96, 96, 0.9);
-            color: #fff;
-            padding: 6px 10px;
-            border-radius: 12px;
-            font-size: 0.9em;
-            font-weight: 700;
-            margin-right: 10px;
-        }
-
-        .scam-avoid {
-            margin-top: 10px;
-            font-weight: 700;
-            color: #ffe6e6;
-        }
-
-        /* Let scam tips show more text */
-        .scam-tip .summary {
-            display: block;
-            -webkit-line-clamp: unset;
-            -webkit-box-orient: unset;
-            overflow: visible;
-            text-overflow: unset;
-        }
-
-        .slide-content {
+        /* =============================================
+           MAIN LAYOUT - 3 ZONES
+           ============================================= */
+        .news-wall {
             display: flex;
-            gap: 30px;
             flex: 1;
-            align-items: flex-start;
+            min-height: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- FEATURED ZONE (left ~70%) --- */
+        .featured-zone {
+            flex: 7;
+            position: relative;
+            overflow: hidden;
+            padding: 28px 28px 24px 32px;
+        }
+
+        /* --- SIDEBAR ZONE (right ~30%) --- */
+        .sidebar-zone {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: 28px 28px 24px 0;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        /* =============================================
+           FEATURED STORY CARD
+           ============================================= */
+        .featured-card {
+            position: absolute;
+            inset: 28px 28px 24px 32px;
+            background: var(--surface-bark);
+            border-radius: 16px;
+            box-shadow:
+                0 4px 24px rgba(0, 0, 0, 0.35),
+                0 1px 3px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            pointer-events: none;
+        }
+
+        .featured-card.active {
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 2;
+        }
+
+        /* -- News story layout: text left, image right -- */
+        .featured-inner {
+            flex: 1;
+            display: flex;
             min-height: 0;
             overflow: hidden;
         }
 
-        .slide-text {
+        .featured-text {
             flex: 1;
-            min-width: 0;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-            overflow: hidden;
-        }
-
-        .slide-image-container {
-            flex: 1;
-            min-width: 0;
-            max-width: 45%;
-            display: flex;
-            align-items: center;
             justify-content: center;
-            flex-shrink: 0;
+            padding: 40px 36px;
+            min-width: 0;
         }
 
-        .slide-image {
-            max-width: 100%;
-            max-height: 60vh;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            object-fit: contain;
-        }
-
-        .slide.no-image .slide-content {
-            flex-direction: column;
-        }
-
-        .slide.no-image .slide-image-container {
-            display: none;
-        }
-
-
-        .slide-header {
-            margin-bottom: 20px;
-            flex-shrink: 0;
-        }
-
-        .source {
+        .featured-badge {
             display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 6px 14px;
+            padding: 5px 14px;
             border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .title {
-            font-size: clamp(1.8em, 3.5vw, 2.5em);
+            font-size: 0.72rem;
             font-weight: 700;
-            line-height: 1.3;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-            text-overflow: ellipsis;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--text-cream);
+            margin-bottom: 14px;
+            align-self: flex-start;
+        }
+
+        .featured-headline {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: clamp(1.6rem, 3vw, 2.4rem);
+            line-height: 1.25;
+            color: var(--text-cream);
+            margin-bottom: 14px;
             display: -webkit-box;
-            -webkit-line-clamp: 6;
+            -webkit-line-clamp: 4;
             -webkit-box-orient: vertical;
-        }
-
-        .summary {
-            font-size: clamp(1em, 1.6vw, 1.2em);
-            line-height: 1.6;
-            opacity: 0.95;
             overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 14;
-            -webkit-box-orient: vertical;
         }
 
-        .footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            flex-shrink: 0;
-        }
-
-        .published {
-            font-size: 1.1em;
-            opacity: 0.8;
-        }
-
-        .slide-counter {
-            font-size: 1.1em;
-            opacity: 0.8;
-        }
-
-        .loading {
-            text-align: center;
-            font-size: 2em;
-        }
-
-        .error {
-            text-align: center;
-            color: #ff6b6b;
-            font-size: 1.5em;
-            padding: 40px;
-        }
-
-        .business-hours {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(10px);
-            padding: 25px 40px;
-            border-top: 2px solid rgba(255, 255, 255, 0.3);
-            z-index: 1000;
+        .featured-meta {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 40px;
+            gap: 10px;
+            font-size: 0.82rem;
+            color: var(--text-sage);
+            margin-bottom: 16px;
             flex-wrap: wrap;
         }
 
-        .business-name {
-            font-size: 2em;
-            font-weight: 700;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            white-space: nowrap;
+        .featured-meta .dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--text-sage);
+            flex-shrink: 0;
         }
 
-        .business-phone {
-            font-size: 1.6em;
-            opacity: 0.95;
-            font-weight: 600;
-            white-space: nowrap;
+        .featured-summary {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 400;
+            font-size: clamp(0.9rem, 1.3vw, 1.05rem);
+            line-height: 1.65;
+            color: var(--text-sage);
+            display: -webkit-box;
+            -webkit-line-clamp: 6;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
-        .business-status {
+        .featured-image-wrap {
+            flex: 0 0 42%;
+            max-width: 42%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .featured-image-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Soft gradient bleed on image edge */
+        .featured-image-wrap::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 60px;
+            background: linear-gradient(to right, var(--surface-bark), transparent);
+            z-index: 1;
+        }
+
+        /* Card with no image: text takes full width */
+        .featured-card.no-image .featured-image-wrap {
+            display: none;
+        }
+
+        .featured-card.no-image .featured-text {
+            padding: 48px 56px;
+        }
+
+        .featured-card.no-image .featured-headline {
+            font-size: clamp(2rem, 3.5vw, 2.8rem);
+            -webkit-line-clamp: 5;
+        }
+
+        .featured-card.no-image .featured-summary {
+            -webkit-line-clamp: 8;
+            font-size: 1.1rem;
+        }
+
+        /* =============================================
+           SCAM TIP FEATURED LAYOUT
+           ============================================= */
+        .featured-card.scam-card {
+            background: var(--surface-bark);
+        }
+
+        /* Red-tinted overlay on entire scam card */
+        .featured-card.scam-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(196, 92, 74, 0.15);
+            pointer-events: none;
+            z-index: 0;
+            border-radius: 16px;
+        }
+
+        /* Scam header bar */
+        .scam-header {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
+            padding: 16px 32px 0;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 1.5px;
+            color: var(--alert-red);
+            text-transform: uppercase;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 2;
         }
 
-        .status-indicator {
-            width: 16px;
-            height: 16px;
+        .scam-header svg {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        /* Scam layout: screenshot left 55%, text right 45% */
+        .scam-inner {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .scam-image-wrap {
+            flex: 0 0 55%;
+            max-width: 55%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        .scam-image-wrap img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .scam-text {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 32px 36px 32px 12px;
+            min-width: 0;
+        }
+
+        .scam-headline {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: clamp(1.8rem, 3vw, 2.6rem);
+            line-height: 1.2;
+            color: var(--text-cream);
+            margin-bottom: 20px;
+        }
+
+        .scam-action {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 600;
+            font-size: clamp(1rem, 1.5vw, 1.2rem);
+            line-height: 1.5;
+            color: var(--accent-amber);
+        }
+
+        /* Scam card with no image: center the text */
+        .featured-card.scam-card.no-image .scam-inner {
+            justify-content: center;
+        }
+
+        .featured-card.scam-card.no-image .scam-image-wrap {
+            display: none;
+        }
+
+        .featured-card.scam-card.no-image .scam-text {
+            padding: 48px 64px;
+            text-align: center;
+            align-items: center;
+        }
+
+        .featured-card.scam-card.no-image .scam-headline {
+            font-size: clamp(2.2rem, 4vw, 3.2rem);
+        }
+
+        .featured-card.scam-card.no-image .scam-action {
+            font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+            max-width: 600px;
+        }
+
+        /* =============================================
+           SIDEBAR CARDS
+           ============================================= */
+        .sidebar-card {
+            flex: 1;
+            background: var(--surface-bark);
+            border-radius: 14px;
+            box-shadow:
+                0 3px 16px rgba(0, 0, 0, 0.3),
+                0 1px 3px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .sidebar-card.sliding-out {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        .sidebar-card.sliding-in {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .sidebar-thumb {
+            flex: 0 0 48%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .sidebar-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* No-image sidebar: badge gets a background strip */
+        .sidebar-card.no-image .sidebar-thumb {
+            display: none;
+        }
+
+        .sidebar-card.no-image .sidebar-body {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .sidebar-body {
+            flex: 1;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 6px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .sidebar-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-cream);
+            align-self: flex-start;
+            flex-shrink: 0;
+        }
+
+        .sidebar-headline {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 0.82rem;
+            line-height: 1.3;
+            color: var(--text-cream);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .sidebar-source {
+            font-size: 0.68rem;
+            color: var(--text-sage);
+            margin-top: auto;
+            flex-shrink: 0;
+        }
+
+        /* =============================================
+           BOTTOM BAR
+           ============================================= */
+        .bottom-bar {
+            flex-shrink: 0;
+            background: var(--bar-walnut);
+            border-top: 1px solid rgba(74, 124, 89, 0.25);
+            padding: 12px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Subtle top glow on the bar */
+        .bottom-bar::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 10%;
+            right: 10%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212, 168, 67, 0.25), transparent);
+        }
+
+        .bar-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .bar-divider {
+            width: 1px;
+            height: 20px;
+            background: rgba(168, 181, 160, 0.2);
+            flex-shrink: 0;
+        }
+
+        .bar-shop-name {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-cream);
+        }
+
+        .bar-shop-icon {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .bar-phone {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-sage);
+        }
+
+        .bar-phone-icon {
+            font-size: 0.9rem;
+        }
+
+        .bar-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            animation: pulse 2s infinite;
+            flex-shrink: 0;
         }
 
-        .status-indicator.open {
+        .status-dot.open {
             background: #4ade80;
-            box-shadow: 0 0 15px #4ade80;
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+            animation: pulse-dot 2s ease-in-out infinite;
         }
 
-        .status-indicator.closed {
-            background: #f87171;
-            box-shadow: 0 0 15px #f87171;
+        .status-dot.closed {
+            background: var(--alert-red);
+            box-shadow: 0 0 8px rgba(196, 92, 74, 0.5);
+            animation: pulse-dot 3s ease-in-out infinite;
         }
 
-        @keyframes pulse {
+        @keyframes pulse-dot {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
+            50% { opacity: 0.5; }
         }
 
-        .status-text {
-            font-size: 1.5em;
+        .bar-status-text {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .bar-status-text.open {
+            color: #4ade80;
+        }
+
+        .bar-status-text.closed {
+            color: var(--alert-red);
+        }
+
+        .bar-hours {
+            font-family: 'Nunito', sans-serif;
             font-weight: 600;
-            white-space: nowrap;
+            font-size: 0.85rem;
+            color: var(--text-sage);
         }
 
-        .business-hours-text {
-            font-size: 1.3em;
-            opacity: 0.95;
-            white-space: nowrap;
-        }
-
-        .countdown {
-            font-size: 1.3em;
-            opacity: 0.9;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-
-        .countdown-time {
+        .bar-datetime {
+            font-family: 'Nunito', sans-serif;
             font-weight: 600;
-            color: #fbbf24;
+            font-size: 0.85rem;
+            color: var(--text-sage);
         }
 
-
-        /* Scrollbar styling */
-        .slide::-webkit-scrollbar {
-            width: 8px;
+        .bar-countdown {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 600;
+            font-size: 0.82rem;
+            color: var(--accent-amber);
         }
 
-        .slide::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+        /* =============================================
+           LOADING STATE
+           ============================================= */
+        .loading-state {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            z-index: 50;
+            background: var(--bg-deep-pine);
         }
 
-        .slide::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
+        .loading-state.hidden {
+            display: none;
         }
 
-        .slide::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
+        .loading-icon {
+            width: 56px;
+            height: 56px;
+            animation: sway 2s ease-in-out infinite;
         }
 
-        /* Responsive design */
+        @keyframes sway {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+
+        .loading-text {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-sage);
+        }
+
+        /* =============================================
+           PROGRESS INDICATOR
+           ============================================= */
+        .featured-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: var(--accent-amber);
+            border-radius: 0 3px 0 0;
+            z-index: 5;
+            transition: width linear;
+        }
+
+        /* =============================================
+           RESPONSIVE: < 768px
+           ============================================= */
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
+            .sidebar-zone {
+                display: none;
             }
-            .business-hours {
-                top: 10px;
-                left: 50%;
-                transform: translateX(-50%);
-                padding: 12px 20px;
-                min-width: 260px;
+
+            .featured-zone {
+                flex: 1;
+                padding: 16px;
             }
-            .business-name {
-                font-size: 1.1em;
+
+            .featured-card {
+                inset: 16px;
             }
-            .business-phone {
-                font-size: 0.95em;
+
+            .featured-text {
+                padding: 24px 20px;
             }
-            .status-text {
-                font-size: 0.9em;
+
+            .featured-image-wrap {
+                flex: 0 0 35%;
+                max-width: 35%;
             }
-            .business-hours-text {
-                font-size: 0.8em;
-            }
-            .countdown {
-                font-size: 0.8em;
-            }
-            .title {
-                font-size: 1.8em;
-                -webkit-line-clamp: 2;
-            }
-            .summary {
-                font-size: 1em;
-                -webkit-line-clamp: 4;
-            }
-            .container {
-                width: 100%;
-                height: calc(100vh - 140px);
-                max-height: calc(100vh - 140px);
-            }
-            .slide {
-                max-height: calc(100vh - 140px);
-            }
-            .title {
-                font-size: 1.6em;
+
+            .featured-headline {
+                font-size: 1.4rem;
                 -webkit-line-clamp: 3;
             }
-            .summary {
-                font-size: 0.95em;
-                -webkit-line-clamp: 8;
+
+            .featured-summary {
+                -webkit-line-clamp: 4;
+                font-size: 0.85rem;
             }
-            .business-hours {
+
+            .bottom-bar {
+                padding: 10px 16px;
+                gap: 12px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .bar-shop-name {
+                font-size: 0.95rem;
+            }
+
+            .bar-hours {
+                display: none;
+            }
+
+            .scam-inner {
                 flex-direction: column;
-                gap: 15px;
-                padding: 20px 25px;
             }
-            .business-name {
-                font-size: 1.5em;
-            }
-            .business-phone {
-                font-size: 1.2em;
-            }
-            .status-text {
-                font-size: 1.2em;
-            }
-            .business-hours-text {
-                font-size: 1em;
-            }
-            .countdown {
-                font-size: 1em;
-            }
-            .status-indicator {
-                width: 14px;
-                height: 14px;
-            }
-            .slide {
-                padding: 20px;
-            }
-            .slide-content {
-                flex-direction: column;
-                gap: 20px;
-            }
-            .slide-image-container {
+
+            .scam-image-wrap {
+                flex: 0 0 45%;
                 max-width: 100%;
             }
-            .slide-image {
-                max-height: 40vh;
+
+            .scam-text {
+                padding: 16px 20px;
+            }
+        }
+
+        /* =============================================
+           TV OPTIMIZATION (1920x1080)
+           ============================================= */
+        @media (min-width: 1800px) {
+            .featured-headline {
+                font-size: 2.5rem;
+            }
+
+            .featured-summary {
+                font-size: 1.1rem;
+                -webkit-line-clamp: 7;
+            }
+
+            .sidebar-headline {
+                font-size: 0.92rem;
+                -webkit-line-clamp: 3;
+            }
+
+            .bar-shop-name {
+                font-size: 1.25rem;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container" id="container">
-        <div class="loading" id="loading">Loading tech news...</div>
-        <div class="error" id="error" style="display: none;"></div>
+
+    <!-- Loading overlay -->
+    <div class="loading-state" id="loadingOverlay">
+        <img src="/static/northwoods-icon.svg" alt="" class="loading-icon">
+        <div class="loading-text" id="loadingText">Loading Northwoods Tech News...</div>
     </div>
 
-    <div class="business-hours" id="businessHours">
-        <div class="business-name">Northwoods Tech</div>
-        <div class="business-phone">715-715-7167</div>
-        <div class="business-status">
-            <div class="status-indicator" id="statusIndicator"></div>
-            <div class="status-text" id="statusText">Checking...</div>
+    <!-- Main 3-zone layout -->
+    <div class="news-wall" id="newsWall">
+        <!-- Featured story zone -->
+        <div class="featured-zone" id="featuredZone">
+            <!-- Cards injected here by JS -->
         </div>
-        <div class="business-hours-text">Tue-Sat: 10:30 AM - 3:30 PM</div>
-        <div class="countdown" id="countdown" style="display: none;"></div>
+
+        <!-- Sidebar zone -->
+        <div class="sidebar-zone" id="sidebarZone">
+            <!-- 3 compact cards injected here by JS -->
+        </div>
     </div>
 
+    <!-- Bottom bar -->
+    <div class="bottom-bar" id="bottomBar">
+        <div class="bar-item">
+            <img src="/static/northwoods-icon.svg" alt="" class="bar-shop-icon">
+            <span class="bar-shop-name">Northwoods Tech</span>
+        </div>
+        <div class="bar-divider"></div>
+        <div class="bar-item">
+            <span class="bar-phone-icon">&#128222;</span>
+            <span class="bar-phone">715-715-7167</span>
+        </div>
+        <div class="bar-divider"></div>
+        <div class="bar-item bar-status" id="barStatus">
+            <span class="status-dot" id="statusDot"></span>
+            <span class="bar-status-text" id="statusLabel">Checking...</span>
+        </div>
+        <div class="bar-divider"></div>
+        <div class="bar-item">
+            <span class="bar-hours">Tue-Sat 10:30-3:30</span>
+        </div>
+        <div class="bar-divider" id="countdownDivider" style="display:none;"></div>
+        <div class="bar-item">
+            <span class="bar-countdown" id="barCountdown"></span>
+        </div>
+        <div class="bar-divider"></div>
+        <div class="bar-item">
+            <span class="bar-datetime" id="barDatetime"></span>
+        </div>
+    </div>
 
-    <script>
-        let currentSlide = 0;
-        let slides = [];
-        let scamTips = [];
-        const SLIDE_DURATION = 25000; // 25 seconds per slide
-        let slideInterval;
+<script>
+/* =============================================================
+   Northwoods Tech News Wall
+   3-zone digital signage for a 40" 1080p TV
+   ============================================================= */
 
-        // Fetch feeds from API
-        async function fetchFeeds(retryCount = 0) {
-            try {
-                document.getElementById('loading').textContent = 'Loading tech news...';
-                const response = await fetch('/api/feeds');
-                const data = await response.json();
-                
-                if (data.success && data.items.length > 0) {
-                    slides = data.items;
-                    await fetchScamTips(); // fetch static scam tips
-                    document.getElementById('loading').textContent = 'Loading images...';
-                    await renderSlides();
-                    
-                    // Hide loading and start slideshow
-                    const loadingEl = document.getElementById('loading');
-                    if (loadingEl) {
-                        loadingEl.style.display = 'none';
-                    }
-                    
-                    console.log('About to call startSlideshow()...');
-                    // Start slideshow immediately after rendering
-                    startSlideshow();
-                    console.log('startSlideshow() called');
-                } else if (retryCount < 10) {
-                    // Wait and retry if data is still loading (max 10 retries = ~10 seconds)
-                    document.getElementById('loading').textContent = 'Loading tech news...';
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    return fetchFeeds(retryCount + 1);
-                } else {
-                    showError('No news items available. Please try refreshing.');
-                }
-            } catch (error) {
-                console.error('Error fetching feeds:', error);
-                if (retryCount < 5) {
-                    // Retry on error too
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    return fetchFeeds(retryCount + 1);
-                } else {
-                    showError('Failed to load news. Please check your connection and try again.');
-                }
+// ---- State ----
+let storyPool = [];           // Combined & shuffled news + scam tips
+let featuredIndex = 0;        // Current featured story index in pool
+let sidebarOffset = 0;        // Current sidebar window offset
+let featuredTimer = null;
+let sidebarTimer = null;
+let progressTimer = null;
+
+const FEATURED_DURATION = 20000;     // 20s for news
+const FEATURED_SCAM_DURATION = 25000; // 25s for scam tips
+const SIDEBAR_DURATION = 15000;       // 15s
+const SIDEBAR_COUNT = 3;
+const AUTO_REFRESH_MS = 30 * 60 * 1000; // 30 min
+
+// Badge color map
+const BADGE_COLORS = {
+    'TECH NEWS': '#D4A843',
+    'TECH TIP': '#4A7C59',
+    'SECURITY': '#2D5A3D',
+    'CONSUMER ALERT': '#C45C4A',
+    'TECH & SCIENCE': '#D4A843',
+    'SCAM ALERT': '#C45C4A',
+};
+
+// ---- Utility ----
+function escapeHtml(text) {
+    if (!text) return '';
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+}
+
+function cleanHtml(html) {
+    if (!html) return '';
+    const d = document.createElement('div');
+    d.innerHTML = html;
+    let text = d.textContent || d.innerText || '';
+    if (text.length > 500) text = text.substring(0, 500) + '...';
+    return text;
+}
+
+function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    try {
+        const then = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - then;
+        const mins = Math.floor(diffMs / 60000);
+        if (mins < 1) return 'Just now';
+        if (mins < 60) return mins + 'm ago';
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return hrs + 'h ago';
+        const days = Math.floor(hrs / 24);
+        if (days === 1) return 'Yesterday';
+        if (days < 7) return days + 'd ago';
+        return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch (e) {
+        return '';
+    }
+}
+
+// ---- Data Fetching ----
+async function fetchFeeds(retryCount) {
+    retryCount = retryCount || 0;
+    try {
+        setLoadingText('Loading tech news...');
+        const [feedsRes, scamRes] = await Promise.all([
+            fetch('/api/feeds'),
+            fetch('/api/scam-tips'),
+        ]);
+        const feedsData = await feedsRes.json();
+        const scamData = await scamRes.json();
+
+        let newsItems = [];
+        let scamItems = [];
+
+        if (feedsData.success && feedsData.items && feedsData.items.length > 0) {
+            newsItems = feedsData.items;
+        }
+        if (scamData.success && scamData.items && scamData.items.length > 0) {
+            scamItems = scamData.items;
+        }
+
+        if (newsItems.length === 0 && scamItems.length === 0) {
+            if (retryCount < 10) {
+                setLoadingText('Waiting for feeds...');
+                await delay(1000);
+                return fetchFeeds(retryCount + 1);
             }
+            showError('No news available. Try refreshing.');
+            return;
         }
 
-        // Fetch scam tips (static JSON)
-        async function fetchScamTips() {
-            try {
-                const resp = await fetch('/api/scam-tips');
-                const data = await resp.json();
-                if (data.success && data.items.length > 0) {
-                    scamTips = data.items;
-                } else {
-                    scamTips = [];
-                }
-            } catch (err) {
-                console.error('Error fetching scam tips:', err);
-                scamTips = [];
-            }
+        // Preload images
+        setLoadingText('Loading images...');
+        await preloadImages([...newsItems, ...scamItems]);
+
+        // Combine and shuffle
+        storyPool = shuffleByCategory(newsItems, scamItems);
+        console.log('Story pool ready:', storyPool.length, 'items');
+
+        // Reset indices
+        featuredIndex = 0;
+        sidebarOffset = 0;
+
+        // Render
+        renderFeatured(storyPool[featuredIndex]);
+        renderSidebar(getSidebarItems());
+        hideLoading();
+
+        // Start timers
+        startFeaturedTimer();
+        startSidebarTimer();
+    } catch (err) {
+        console.error('Fetch error:', err);
+        if (retryCount < 5) {
+            await delay(1000);
+            return fetchFeeds(retryCount + 1);
         }
+        showError('Failed to load news. Check connection.');
+    }
+}
 
-        // Render slides and wait for images to load
-        async function renderSlides() {
-            const container = document.getElementById('container');
-            container.innerHTML = '';
-            
-            // Reset to first slide
-            currentSlide = 0;
-            console.log('Rendering', slides.length, 'news slides and', scamTips.length, 'scam tips, starting at slide 0');
-            
-            const imagePromises = [];
-            
-            const combined = [...scamTips, ...slides];
+function delay(ms) {
+    return new Promise(function(r) { setTimeout(r, ms); });
+}
 
-            combined.forEach((item, index) => {
-                const slide = document.createElement('div');
-                const hasImage = item.image && item.image.trim() !== '';
-                
-                const baseClass = item.type === 'scam' ? 'slide scam-tip' : 'slide';
-                if (!hasImage) {
-                    slide.className = `${baseClass} no-image ${index === 0 ? 'active' : ''}`;
-                } else {
-                    slide.className = `${baseClass} ${index === 0 ? 'active' : ''}`;
-                }
-                
-                // Clean HTML from summary
-                const isScam = item.type === 'scam' || item.category === 'scam';
-                const summary = isScam
-                    ? `${escapeHtml(item.detail || '')}${item.avoid ? `<div class="scam-avoid">How to avoid: ${escapeHtml(item.avoid)}</div>` : ''}`
-                    : cleanHtml(item.summary || '');
-                
-                let imageHtml = '';
-                if (hasImage) {
-                    const img = new Image();
-                    const imagePromise = new Promise((resolve, reject) => {
-                        img.onload = resolve;
-                        img.onerror = () => {
-                            slide.classList.add('no-image');
-                            resolve(); // Resolve even on error so we don't block
-                        };
-                        img.src = item.image;
-                    });
-                    imagePromises.push(imagePromise);
-                    
-                    imageHtml = `
-                        <div class="slide-image-container">
-                            <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="slide-image">
-                        </div>
-                    `;
-                }
-                
-                const badge = isScam ? '<div class="scam-badge">SCAM TIP</div>' : '';
-                const source = isScam ? 'Scam Tips' : (item.source || 'Unknown');
-                const published = isScam ? '' : formatDate(item.published);
-
-                slide.innerHTML = `
-                    <div class="slide-header">
-                        <div class="source">${badge}${escapeHtml(source)}</div>
-                        <h1 class="title">${escapeHtml(item.title || 'No Title')}</h1>
-                    </div>
-                    <div class="slide-content">
-                        <div class="slide-text">
-                            <div class="summary">${summary}</div>
-                        </div>
-                        ${imageHtml}
-                    </div>
-                    <div class="footer">
-                        <div class="published">${published}</div>
-                        <div class="slide-counter">${index + 1} / ${combined.length}</div>
-                    </div>
-                `;
-                
-                container.appendChild(slide);
-            });
-            
-            // Wait for all images to load (or fail) before continuing
-            await Promise.all(imagePromises);
-            
-            // Verify slides were created
-            const createdSlides = document.querySelectorAll('.slide');
-            console.log('Slides rendered:', createdSlides.length, 'slides created (scam tips + news)');
-            console.log('Active slide:', document.querySelector('.slide.active') ? 'found' : 'NOT FOUND');
-        }
-
-        // Clean HTML tags but preserve text
-        function cleanHtml(html) {
-            const div = document.createElement('div');
-            div.innerHTML = html;
-            let text = div.textContent || div.innerText || '';
-            // Limit length (increased for better readability)
-            if (text.length > 800) {
-                text = text.substring(0, 800) + '...';
-            }
-            return escapeHtml(text);
-        }
-
-        // Escape HTML to prevent XSS
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Format date
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            try {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            } catch (e) {
-                return dateString;
-            }
-        }
-
-        // Start slideshow
-        function startSlideshow() {
-            // Clear any existing interval
-            if (slideInterval) {
-                console.log('Clearing existing interval before starting new one');
-                clearInterval(slideInterval);
-                slideInterval = null;
-            }
-            
-            const slideCount = document.querySelectorAll('.slide').length;
-            console.log('=== STARTING SLIDESHOW ===');
-            console.log('Slides available:', slideCount);
-            console.log('Slide duration:', SLIDE_DURATION, 'ms (', SLIDE_DURATION / 1000, 'seconds)');
-            console.log('Starting at slide:', currentSlide);
-            
-            // Start the interval - this should run continuously
-            slideInterval = setInterval(() => {
-                const timestamp = new Date().toLocaleTimeString();
-                console.log(`[${timestamp}] Interval tick - calling nextSlide() from slide ${currentSlide}`);
-                nextSlide();
-            }, SLIDE_DURATION);
-            
-            console.log('Interval ID created:', slideInterval);
-            console.log('Interval will fire every', SLIDE_DURATION / 1000, 'seconds');
-            console.log('Next automatic advance in', SLIDE_DURATION / 1000, 'seconds');
-            console.log('=== SLIDESHOW STARTED ===');
-        }
-
-        // Show next slide
-        function nextSlide() {
-            const allSlides = document.querySelectorAll('.slide');
-            console.log('nextSlide called, total slides:', allSlides.length, 'currentSlide:', currentSlide);
-            
-            if (allSlides.length === 0) {
-                console.warn('No slides found!');
-                return;
-            }
-            
-            // Remove active from current slide
-            const currentSlideEl = allSlides[currentSlide];
-            if (currentSlideEl) {
-                currentSlideEl.classList.remove('active');
-                console.log('Removed active from slide', currentSlide);
-            } else {
-                console.warn('Current slide element not found at index', currentSlide);
-            }
-            
-            // Move to next slide (loop back to 0 when reaching end)
-            const oldSlide = currentSlide;
-            currentSlide = (currentSlide + 1) % allSlides.length;
-            console.log('Moving from slide', oldSlide, 'to slide', currentSlide);
-            
-            // Add active to next slide
-            const nextSlideEl = allSlides[currentSlide];
-            if (nextSlideEl) {
-                nextSlideEl.classList.add('active');
-                console.log('Added active to slide', currentSlide);
-            } else {
-                console.error('Next slide element not found at index', currentSlide);
-            }
-        }
-
-        // Show previous slide
-        function previousSlide() {
-            const allSlides = document.querySelectorAll('.slide');
-            if (allSlides.length === 0) return;
-            
-            allSlides[currentSlide].classList.remove('active');
-            currentSlide = (currentSlide - 1 + allSlides.length) % allSlides.length;
-            allSlides[currentSlide].classList.add('active');
-        }
-
-        // Show error message
-        function showError(message) {
-            document.getElementById('loading').style.display = 'none';
-            const errorDiv = document.getElementById('error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-
-        // Keyboard controls
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight' || e.key === ' ') {
-                nextSlide();
-            } else if (e.key === 'ArrowLeft') {
-                previousSlide();
-            } else if (e.key === 'r' || e.key === 'R') {
-                // Refresh feeds
-                fetch('/api/refresh').then(() => fetchFeeds()).catch(console.error);
-            }
+// ---- Image Preloading ----
+async function preloadImages(items) {
+    const promises = items.map(function(item) {
+        if (!item.image) return Promise.resolve();
+        return new Promise(function(resolve) {
+            const img = new Image();
+            img.onload = resolve;
+            img.onerror = function() {
+                item._imageFailed = true;
+                resolve();
+            };
+            img.src = item.image;
         });
+    });
+    await Promise.all(promises);
+}
 
-        // Business hours logic
-        function updateBusinessHours() {
-            const now = new Date();
-            const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-            const currentTime = hours * 60 + minutes; // Convert to minutes since midnight
-            
-            const openTime = 10 * 60 + 30; // 10:30 AM = 630 minutes
-            const closeTime = 15 * 60 + 30; // 3:30 PM = 930 minutes
-            
-            const statusIndicator = document.getElementById('statusIndicator');
-            const statusText = document.getElementById('statusText');
-            const countdown = document.getElementById('countdown');
-            
-            // Check if it's Tuesday (2) through Saturday (6)
-            const isOpenDay = day >= 2 && day <= 6;
-            const isOpenTime = isOpenDay && currentTime >= openTime && currentTime < closeTime;
-            
-            if (isOpenTime) {
-                // Open
-                statusIndicator.className = 'status-indicator open';
-                statusText.textContent = 'Open Now';
-                countdown.style.display = 'none';
+// ---- Shuffle by Category ----
+// Interleave categories so you don't get 5 security articles in a row.
+// Scam tips appear roughly every 5th-6th item.
+function shuffleByCategory(newsItems, scamItems) {
+    // Group news by category
+    const buckets = {};
+    newsItems.forEach(function(item) {
+        const cat = item.badge || item.category || 'OTHER';
+        if (!buckets[cat]) buckets[cat] = [];
+        buckets[cat].push(item);
+    });
+
+    // Shuffle within each bucket
+    Object.keys(buckets).forEach(function(key) {
+        shuffleArray(buckets[key]);
+    });
+
+    // Round-robin interleave news items
+    const categoryKeys = Object.keys(buckets);
+    shuffleArray(categoryKeys);
+    const interleaved = [];
+    let emptied = 0;
+    while (emptied < categoryKeys.length) {
+        emptied = 0;
+        for (let i = 0; i < categoryKeys.length; i++) {
+            const bucket = buckets[categoryKeys[i]];
+            if (bucket.length > 0) {
+                interleaved.push(bucket.shift());
             } else {
-                // Closed
-                statusIndicator.className = 'status-indicator closed';
-                statusText.textContent = 'Closed';
-                countdown.style.display = 'block';
-                
-                // Calculate next opening time
-                let nextOpen = new Date(now);
-                
-                if (!isOpenDay) {
-                    // Not an open day (Sunday or Monday)
-                    if (day === 0) { // Sunday
-                        nextOpen.setDate(now.getDate() + 2); // Tuesday
-                    } else { // Monday
-                        nextOpen.setDate(now.getDate() + 1); // Tuesday
-                    }
-                    nextOpen.setHours(10, 30, 0, 0);
+                emptied++;
+            }
+        }
+    }
+
+    // Insert scam tips every 5th-6th position
+    shuffleArray(scamItems);
+    const result = [];
+    let scamIdx = 0;
+    let insertCounter = 0;
+    for (let i = 0; i < interleaved.length; i++) {
+        result.push(interleaved[i]);
+        insertCounter++;
+        if (insertCounter >= 5 && scamIdx < scamItems.length) {
+            result.push(scamItems[scamIdx]);
+            scamIdx++;
+            insertCounter = 0;
+        }
+    }
+    // Append remaining scam tips
+    while (scamIdx < scamItems.length) {
+        result.push(scamItems[scamIdx]);
+        scamIdx++;
+    }
+
+    return result;
+}
+
+function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+    }
+}
+
+// ---- Deduplication ----
+// Get sidebar items that don't overlap with current featured
+function getSidebarItems() {
+    const items = [];
+    const featuredItem = storyPool[featuredIndex];
+    let idx = sidebarOffset;
+    let checked = 0;
+    while (items.length < SIDEBAR_COUNT && checked < storyPool.length) {
+        const candidate = storyPool[idx % storyPool.length];
+        if (candidate !== featuredItem) {
+            items.push(candidate);
+        }
+        idx++;
+        checked++;
+    }
+    return items;
+}
+
+// ---- Render Featured ----
+function renderFeatured(item) {
+    const zone = document.getElementById('featuredZone');
+    const isScam = item.type === 'scam';
+    const hasImage = item.image && !item._imageFailed;
+
+    // Build card
+    const card = document.createElement('div');
+    let cardClass = 'featured-card';
+    if (isScam) cardClass += ' scam-card';
+    if (!hasImage) cardClass += ' no-image';
+    card.className = cardClass;
+
+    if (isScam) {
+        card.innerHTML = buildScamFeatured(item, hasImage);
+    } else {
+        card.innerHTML = buildNewsFeatured(item, hasImage);
+    }
+
+    // Add progress bar
+    const progress = document.createElement('div');
+    progress.className = 'featured-progress';
+    progress.id = 'featuredProgress';
+    card.appendChild(progress);
+
+    // Crossfade: deactivate old, activate new
+    const oldCard = zone.querySelector('.featured-card.active');
+    if (oldCard) {
+        oldCard.classList.remove('active');
+        // Remove old card after transition
+        setTimeout(function() {
+            if (oldCard.parentNode) oldCard.parentNode.removeChild(oldCard);
+        }, 1100);
+    }
+
+    zone.appendChild(card);
+    // Force reflow for transition
+    void card.offsetWidth;
+    card.classList.add('active');
+
+    // Start progress bar animation
+    startProgressBar(isScam ? FEATURED_SCAM_DURATION : FEATURED_DURATION);
+}
+
+function buildNewsFeatured(item, hasImage) {
+    const badgeColor = BADGE_COLORS[item.badge] || BADGE_COLORS[item.category] || '#D4A843';
+    const summary = cleanHtml(item.summary || '');
+    const time = timeAgo(item.published);
+    const source = escapeHtml(item.source || 'Unknown');
+
+    let imageHtml = '';
+    if (hasImage) {
+        imageHtml = '<div class="featured-image-wrap">' +
+            '<img src="' + escapeHtml(item.image) + '" alt="" loading="eager">' +
+            '</div>';
+    }
+
+    return '<div class="featured-inner">' +
+        '<div class="featured-text">' +
+            '<span class="featured-badge" style="background:' + badgeColor + '">' + escapeHtml(item.badge || item.category || '') + '</span>' +
+            '<h1 class="featured-headline">' + escapeHtml(item.title || 'No Title') + '</h1>' +
+            '<div class="featured-meta">' +
+                '<span>' + source + '</span>' +
+                (time ? '<span class="dot"></span><span>' + time + '</span>' : '') +
+            '</div>' +
+            '<p class="featured-summary">' + escapeHtml(summary) + '</p>' +
+        '</div>' +
+        imageHtml +
+    '</div>';
+}
+
+function buildScamFeatured(item, hasImage) {
+    let imageHtml = '';
+    if (hasImage) {
+        imageHtml = '<div class="scam-image-wrap">' +
+            '<img src="' + escapeHtml(item.image) + '" alt="" loading="eager">' +
+            '</div>';
+    }
+
+    return '<div class="scam-header">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>' +
+            '<line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' +
+        '</svg>' +
+        '<span>SCAM ALERT</span>' +
+    '</div>' +
+    '<div class="scam-inner">' +
+        imageHtml +
+        '<div class="scam-text">' +
+            '<h1 class="scam-headline">' + escapeHtml(item.headline || item.title || '') + '</h1>' +
+            '<p class="scam-action">' + escapeHtml(item.action || '') + '</p>' +
+        '</div>' +
+    '</div>';
+}
+
+// ---- Progress Bar ----
+function startProgressBar(duration) {
+    if (progressTimer) cancelAnimationFrame(progressTimer);
+    const bar = document.getElementById('featuredProgress');
+    if (!bar) return;
+    const start = performance.now();
+    function tick(now) {
+        const elapsed = now - start;
+        const pct = Math.min((elapsed / duration) * 100, 100);
+        bar.style.width = pct + '%';
+        if (pct < 100) {
+            progressTimer = requestAnimationFrame(tick);
+        }
+    }
+    bar.style.width = '0%';
+    bar.style.transition = 'none';
+    progressTimer = requestAnimationFrame(tick);
+}
+
+// ---- Render Sidebar ----
+function renderSidebar(items) {
+    const zone = document.getElementById('sidebarZone');
+
+    // If first render (empty), just populate
+    if (zone.children.length === 0) {
+        items.forEach(function(item) {
+            zone.appendChild(buildSidebarCard(item));
+        });
+        return;
+    }
+
+    // Slide-up animation: mark old cards as sliding out, then replace
+    const oldCards = Array.from(zone.children);
+    oldCards.forEach(function(c) {
+        c.classList.add('sliding-out');
+    });
+
+    setTimeout(function() {
+        zone.innerHTML = '';
+        items.forEach(function(item) {
+            const card = buildSidebarCard(item);
+            card.classList.add('sliding-in');
+            zone.appendChild(card);
+            // Force reflow then remove sliding-in
+            void card.offsetWidth;
+            card.classList.remove('sliding-in');
+        });
+    }, 400);
+}
+
+function buildSidebarCard(item) {
+    const isScam = item.type === 'scam';
+    const hasImage = (isScam ? item.image : item.image) && !item._imageFailed;
+    const badge = isScam ? 'SCAM ALERT' : (item.badge || item.category || '');
+    const badgeColor = BADGE_COLORS[badge] || '#D4A843';
+    const headline = isScam ? (item.headline || '') : (item.title || '');
+    const source = isScam ? 'Scam Tip' : (item.source || '');
+
+    const card = document.createElement('div');
+    card.className = 'sidebar-card' + (hasImage ? '' : ' no-image');
+
+    let thumbHtml = '';
+    if (hasImage) {
+        thumbHtml = '<div class="sidebar-thumb">' +
+            '<img src="' + escapeHtml(item.image) + '" alt="" loading="lazy">' +
+            '</div>';
+    }
+
+    card.innerHTML = thumbHtml +
+        '<div class="sidebar-body">' +
+            '<span class="sidebar-badge" style="background:' + badgeColor + '">' + escapeHtml(badge) + '</span>' +
+            '<span class="sidebar-headline">' + escapeHtml(headline) + '</span>' +
+            '<span class="sidebar-source">' + escapeHtml(source) + '</span>' +
+        '</div>';
+
+    return card;
+}
+
+// ---- Timers ----
+function startFeaturedTimer() {
+    if (featuredTimer) clearTimeout(featuredTimer);
+
+    function advance() {
+        featuredIndex = (featuredIndex + 1) % storyPool.length;
+        renderFeatured(storyPool[featuredIndex]);
+        // Also update sidebar to maintain deduplication
+        renderSidebar(getSidebarItems());
+        scheduleFeatured();
+    }
+
+    function scheduleFeatured() {
+        const item = storyPool[featuredIndex];
+        const dur = (item && item.type === 'scam') ? FEATURED_SCAM_DURATION : FEATURED_DURATION;
+        featuredTimer = setTimeout(advance, dur);
+    }
+
+    scheduleFeatured();
+}
+
+function startSidebarTimer() {
+    if (sidebarTimer) clearInterval(sidebarTimer);
+    sidebarTimer = setInterval(function() {
+        sidebarOffset += SIDEBAR_COUNT;
+        if (sidebarOffset >= storyPool.length) sidebarOffset = 0;
+        renderSidebar(getSidebarItems());
+    }, SIDEBAR_DURATION);
+}
+
+// ---- Featured Navigation (prev/next) ----
+function nextFeatured() {
+    if (featuredTimer) clearTimeout(featuredTimer);
+    if (progressTimer) cancelAnimationFrame(progressTimer);
+    featuredIndex = (featuredIndex + 1) % storyPool.length;
+    renderFeatured(storyPool[featuredIndex]);
+    renderSidebar(getSidebarItems());
+    startFeaturedTimer();
+}
+
+function prevFeatured() {
+    if (featuredTimer) clearTimeout(featuredTimer);
+    if (progressTimer) cancelAnimationFrame(progressTimer);
+    featuredIndex = (featuredIndex - 1 + storyPool.length) % storyPool.length;
+    renderFeatured(storyPool[featuredIndex]);
+    renderSidebar(getSidebarItems());
+    startFeaturedTimer();
+}
+
+// ---- Business Hours ----
+function updateBusinessHours() {
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun ... 6=Sat
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    const openTime = 10 * 60 + 30;  // 10:30 AM
+    const closeTime = 15 * 60 + 30; // 3:30 PM
+
+    const isOpenDay = day >= 2 && day <= 6; // Tue-Sat
+    const isOpen = isOpenDay && currentMins >= openTime && currentMins < closeTime;
+
+    const dot = document.getElementById('statusDot');
+    const label = document.getElementById('statusLabel');
+    const countdown = document.getElementById('barCountdown');
+    const countdownDivider = document.getElementById('countdownDivider');
+
+    if (isOpen) {
+        dot.className = 'status-dot open';
+        label.className = 'bar-status-text open';
+        label.textContent = 'Open Now';
+        countdown.textContent = '';
+        countdownDivider.style.display = 'none';
+    } else {
+        dot.className = 'status-dot closed';
+        label.className = 'bar-status-text closed';
+        label.textContent = 'Closed';
+        countdownDivider.style.display = '';
+
+        // Compute next opening
+        let nextOpen = new Date(now);
+        if (!isOpenDay) {
+            // Sunday or Monday
+            if (day === 0) nextOpen.setDate(now.getDate() + 2);
+            else if (day === 1) nextOpen.setDate(now.getDate() + 1);
+            nextOpen.setHours(10, 30, 0, 0);
+        } else {
+            if (currentMins < openTime) {
+                nextOpen.setHours(10, 30, 0, 0);
+            } else {
+                // After close
+                if (day === 6) {
+                    nextOpen.setDate(now.getDate() + 3); // Sat -> Tue
                 } else {
-                    // It's an open day
-                    if (currentTime < openTime) {
-                        // Before opening time today
-                        nextOpen.setHours(10, 30, 0, 0);
-                    } else {
-                        // After closing time today
-                        if (day === 6) { // Saturday
-                            nextOpen.setDate(now.getDate() + 2); // Tuesday
-                        } else {
-                            nextOpen.setDate(now.getDate() + 1); // Next day
-                        }
-                        nextOpen.setHours(10, 30, 0, 0);
-                    }
+                    nextOpen.setDate(now.getDate() + 1);
                 }
-                
-                // Calculate time difference
-                const diff = nextOpen - now;
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                
-                let countdownText = 'Returning in ';
-                if (days > 0) {
-                    countdownText += `${days}d ${hours}h ${mins}m`;
-                } else if (hours > 0) {
-                    countdownText += `${hours}h ${mins}m`;
-                } else {
-                    countdownText += `${mins}m`;
-                }
-                
-                countdown.innerHTML = `<span class="countdown-time">${countdownText}</span>`;
+                nextOpen.setHours(10, 30, 0, 0);
             }
         }
 
-        // Update business hours every minute
-        updateBusinessHours();
-        setInterval(updateBusinessHours, 60000); // Update every minute
+        const diff = nextOpen - now;
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
 
-        // Auto-refresh feeds every 30 minutes (but don't restart slideshow if it's running)
-        setInterval(() => {
-            console.log('Auto-refresh triggered');
-            fetchFeeds().then(() => {
-                // Only restart slideshow if it's not already running
-                if (!slideInterval) {
-                    console.log('Restarting slideshow after refresh');
-                    startSlideshow();
-                } else {
-                    console.log('Slideshow already running, skipping restart');
-                }
-            });
-        }, 30 * 60 * 1000);
+        let text = 'Opens in ';
+        if (d > 0) text += d + 'd ' + h + 'h';
+        else if (h > 0) text += h + 'h ' + m + 'm';
+        else text += m + 'm';
 
-        // Initial load
-        fetchFeeds();
-    </script>
+        countdown.textContent = text;
+    }
+}
+
+// ---- Clock ----
+function updateClock() {
+    const el = document.getElementById('barDatetime');
+    if (!el) return;
+    const now = new Date();
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const dayName = dayNames[now.getDay()];
+    const month = monthNames[now.getMonth()];
+    const date = now.getDate();
+    let hours = now.getHours();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    const mins = now.getMinutes().toString().padStart(2, '0');
+    el.textContent = dayName + ' ' + month + ' ' + date + ', ' + hours + ':' + mins + ' ' + ampm;
+}
+
+// ---- Loading / Error UI ----
+function setLoadingText(txt) {
+    const el = document.getElementById('loadingText');
+    if (el) el.textContent = txt;
+}
+
+function hideLoading() {
+    const el = document.getElementById('loadingOverlay');
+    if (el) el.classList.add('hidden');
+}
+
+function showError(msg) {
+    setLoadingText(msg);
+}
+
+// ---- Keyboard Controls ----
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+        nextFeatured();
+    } else if (e.key === 'ArrowLeft') {
+        prevFeatured();
+    } else if (e.key === 'r' || e.key === 'R') {
+        fetch('/api/refresh').then(function() {
+            return fetchFeeds();
+        }).catch(console.error);
+    }
+});
+
+// ---- Init ----
+updateBusinessHours();
+updateClock();
+setInterval(updateBusinessHours, 60000);
+setInterval(updateClock, 60000);
+
+// Auto-refresh every 30 min
+setInterval(function() {
+    console.log('Auto-refresh triggered');
+    fetchFeeds();
+}, AUTO_REFRESH_MS);
+
+// Go!
+fetchFeeds();
+</script>
 </body>
 </html>
-
