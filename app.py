@@ -195,7 +195,8 @@ def parse_rss_feeds() -> List[Dict]:
         feed_url = feed_info['url']
         try:
             logger.info(f"Fetching feed: {feed_url}")
-            feed = feedparser.parse(feed_url, etag=None, modified=None)
+            feed = feedparser.parse(feed_url, etag=None, modified=None,
+                                      agent='NorthwoodsTechNewsFeed/1.0 (+http://localhost:5000)')
 
             if feed.bozo and feed.bozo_exception:
                 logger.warning(f"Error parsing feed {feed_url}: {feed.bozo_exception}")
