@@ -9,17 +9,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* =============================================
-           CSS CUSTOM PROPERTIES - Northwoods Palette
+           CSS CUSTOM PROPERTIES - Modern Northwoods
            ============================================= */
         :root {
-            --bg-deep-pine: #1B2E1F;
-            --surface-bark: #2A2118;
-            --accent-amber: #D4A843;
-            --accent-forest: #4A7C59;
-            --text-cream: #F5F0E8;
-            --text-sage: #A8B5A0;
-            --alert-red: #C45C4A;
-            --bar-walnut: #1A1510;
+            --bg-deep-pine: #0F1A14;
+            --surface-bark: #162220;
+            --accent-amber: #E8B64A;
+            --accent-forest: #3DBEA0;
+            --text-cream: #F0F4F1;
+            --text-sage: #8FA8A0;
+            --alert-red: #E06050;
+            --bar-walnut: #0A1210;
         }
 
         /* =============================================
@@ -44,15 +44,15 @@
             flex-direction: column;
         }
 
-        /* Subtle pine texture overlay */
+        /* Subtle ambient glow overlay */
         body::before {
             content: '';
             position: fixed;
             inset: 0;
             background:
-                radial-gradient(ellipse at 20% 50%, rgba(74, 124, 89, 0.08) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 20%, rgba(212, 168, 67, 0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 80%, rgba(42, 33, 24, 0.15) 0%, transparent 60%);
+                radial-gradient(ellipse at 15% 50%, rgba(61, 190, 160, 0.06) 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 20%, rgba(232, 182, 74, 0.04) 0%, transparent 45%),
+                radial-gradient(ellipse at 50% 90%, rgba(61, 190, 160, 0.03) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
         }
@@ -206,7 +206,7 @@
             left: 0;
             top: 0;
             bottom: 0;
-            width: 60px;
+            width: 80px;
             background: linear-gradient(to right, var(--surface-bark), transparent);
             z-index: 1;
         }
@@ -447,13 +447,13 @@
            ============================================= */
         .bottom-bar {
             flex-shrink: 0;
-            background: var(--bar-walnut);
-            border-top: 1px solid rgba(74, 124, 89, 0.25);
-            padding: 12px 32px;
+            background: linear-gradient(180deg, #0D1816 0%, var(--bar-walnut) 100%);
+            border-top: 1px solid rgba(61, 190, 160, 0.15);
+            padding: 20px 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 28px;
+            gap: 36px;
             flex-wrap: wrap;
             position: relative;
             z-index: 10;
@@ -464,48 +464,49 @@
             content: '';
             position: absolute;
             top: -1px;
-            left: 10%;
-            right: 10%;
+            left: 5%;
+            right: 5%;
             height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(212, 168, 67, 0.25), transparent);
+            background: linear-gradient(90deg, transparent, rgba(61, 190, 160, 0.3), transparent);
         }
 
         .bar-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             white-space: nowrap;
         }
 
         .bar-divider {
             width: 1px;
-            height: 20px;
-            background: rgba(168, 181, 160, 0.2);
+            height: 28px;
+            background: rgba(143, 168, 160, 0.15);
             flex-shrink: 0;
         }
 
         .bar-shop-name {
             font-family: 'Nunito', sans-serif;
             font-weight: 700;
-            font-size: 1.1rem;
+            font-size: 1.5rem;
             color: var(--text-cream);
+            letter-spacing: 0.5px;
         }
 
         .bar-shop-icon {
-            width: 22px;
-            height: 22px;
+            width: 28px;
+            height: 28px;
             flex-shrink: 0;
         }
 
         .bar-phone {
             font-family: 'Nunito', sans-serif;
             font-weight: 600;
-            font-size: 0.95rem;
-            color: var(--text-sage);
+            font-size: 1.2rem;
+            color: var(--text-cream);
         }
 
         .bar-phone-icon {
-            font-size: 0.9rem;
+            font-size: 1.1rem;
         }
 
         .bar-status {
@@ -515,33 +516,33 @@
         }
 
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             flex-shrink: 0;
         }
 
         .status-dot.open {
             background: #4ade80;
-            box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+            box-shadow: 0 0 12px rgba(74, 222, 128, 0.7);
             animation: pulse-dot 2s ease-in-out infinite;
         }
 
         .status-dot.closed {
             background: var(--alert-red);
-            box-shadow: 0 0 8px rgba(196, 92, 74, 0.5);
+            box-shadow: 0 0 12px rgba(224, 96, 80, 0.6);
             animation: pulse-dot 3s ease-in-out infinite;
         }
 
         @keyframes pulse-dot {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.45; }
         }
 
         .bar-status-text {
             font-family: 'Nunito', sans-serif;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 1.15rem;
         }
 
         .bar-status-text.open {
@@ -555,21 +556,21 @@
         .bar-hours {
             font-family: 'Nunito', sans-serif;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 1.05rem;
             color: var(--text-sage);
         }
 
         .bar-datetime {
             font-family: 'Nunito', sans-serif;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 1.05rem;
             color: var(--text-sage);
         }
 
         .bar-countdown {
             font-family: 'Nunito', sans-serif;
             font-weight: 600;
-            font-size: 0.82rem;
+            font-size: 1rem;
             color: var(--accent-amber);
         }
 
@@ -618,7 +619,7 @@
             bottom: 0;
             left: 0;
             height: 3px;
-            background: var(--accent-amber);
+            background: linear-gradient(90deg, var(--accent-forest), var(--accent-amber));
             border-radius: 0 3px 0 0;
             z-index: 5;
             transition: width linear;
