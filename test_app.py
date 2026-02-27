@@ -22,7 +22,7 @@ class TestRSSFeeds(unittest.TestCase):
         """Test that index page loads."""
         response = self.app.get('/')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Tech News RSS Slideshow', response.data)
+        self.assertIn(b'Northwoods', response.data)
     
     def test_feeds_api_returns_json(self):
         """Test that /api/feeds returns JSON."""
