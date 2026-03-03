@@ -6,18 +6,24 @@ A Flask application that displays tech news from RSS feeds in a fullscreen slide
 from flask import Flask, render_template, jsonify
 import feedparser
 from datetime import datetime
+import json
+import os
 import time
 from typing import List, Dict, Optional
 import logging
 import re
 import threading
-import datetime as dt
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Load business config
+_config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
+with open(_config_path, 'r') as _f:
+    BUSINESS_CONFIG = json.load(_f)
 
 # Curated tech news RSS feeds with categories
 RSS_FEEDS = [
@@ -35,32 +41,75 @@ RSS_FEEDS = [
     {"url": "https://arstechnica.com/science/feed/", "category": "broad_tech", "badge": "TECH & SCIENCE"},
 ]
 
-# Filter out ad-like, deal, and clickbait titles
-_JUNK_PATTERNS = re.compile(r'|'.join([
+# ── Title filter ─────────────────────────────────────────────
+# Plain keywords / phrases — auto-wrapped with \b word boundaries.
+# Just add a string to the right list; no regex needed.
+_JUNK_KEYWORDS = {
     # Shopping / deals
-    r'\bcoupon\b', r'\bdeal(s)?\b', r'\bdiscount\b', r'\bon sale\b',
-    r'\bsave \$', r'\b\d+% off\b', r'\bpromo\b', r'\baffiliate\b',
-    r'\bbuy now\b', r'\bshop now\b', r'\bclearance\b',
-    r'\bvoucher\b', r'\bsponsored\b', r'\bgift guide\b',
-    r'\bunder \$\d+', r'\bstarting at \$',
-    r'\bprice drop\b', r'\bprice cut\b',
-    # Product roundups / reviews
-    r'\bbest .{0,40}\b20[2-3]\d', r'\bbest .{0,20} to buy\b',
-    r'\bbest .{0,20} we.ve tested\b', r'\bbest .{0,20} right now\b',
-    r'\bbest .{0,40} overall\b',
-    r'\b\d+ best\b', r'\btop \d+ \b',
-    r'\btested and reviewed\b', r'\breviewed and rated\b',
-    r'\bbuying guide\b', r'\bbuyer.s guide\b',
-    # Clickbait "I tried" / personal shopping
-    r'\bI tried\b', r'\bwe tried\b', r'\bI tested\b', r'\bwe tested\b',
-    r'\byou need to buy\b', r'\byou should buy\b',
-    r'\bworth buying\b', r'\bworth the money\b',
-    r'\bworth the price\b', r'\bworth every penny\b',
-    # Listicle product roundups
-    r'\bto buy in 20[2-3]\d', r'\bfor 20[2-3]\d\)',
-    r'\bto watch this weekend\b', r'\bto stream this weekend\b',
-    r'\bmovies to watch\b', r'\bshows to watch\b',
-]), re.IGNORECASE)
+    "coupon", "discount", "on sale", "promo", "affiliate",
+    "buy now", "shop now", "clearance", "voucher", "sponsored",
+    "gift guide", "price drop", "price cut",
+    "tested and reviewed", "reviewed and rated",
+    "buying guide",
+    "I tried", "we tried", "I tested", "we tested",
+    "you need to buy", "you should buy",
+    "worth buying", "worth the money", "worth the price", "worth every penny",
+    "to watch this weekend", "to stream this weekend",
+    "movies to watch", "shows to watch",
+
+    # ── Politics / partisan — keep the shop TV neutral ──
+    # Figures
+    "Trump", "Biden", "Obama", "RFK", "Kennedy",
+    "DeSantis", "Vance", "Pence", "Harris",
+    "Pelosi", "McConnell", "Schumer", "AOC",
+    "Marjorie Taylor", "Elon Musk", "Vivek",
+    # Parties & labels
+    "Republican", "GOP", "MAGA",
+    "liberal", "conservative", "partisan", "bipartisan",
+    # Institutions
+    "White House", "Capitol Hill", "Oval Office",
+    "Congress", "Senate", "House of Representatives",
+    "Supreme Court", "DOGE", "HHS",
+    # Titles
+    "Senator", "Congressman", "Congresswoman", "lawmaker", "legislator",
+    # Elections
+    "election", "ballot", "voter", "caucus", "midterm",
+    "campaign trail", "poll shows",
+    # Political actions
+    "impeach", "executive order", "veto",
+    "filibuster",  "debt ceiling",
+    # Culture war
+    "woke", "cancel culture", "DEI",
+    "gun control", "gun rights", "Second Amendment",
+    "abortion", "Roe v", "immigration", "border wall",
+    # Opinion
+    "The Lancet", "editorial board",
+}
+
+# Patterns that need actual regex (wildcards, numbers, etc.)
+_JUNK_REGEX = [
+    r'deal(s)?\b',
+    r'save \$', r'\d+% off', r'under \$\d+', r'starting at \$',
+    r'best .{0,40}\b20[2-3]\d', r'best .{0,20} to buy',
+    r'best .{0,20} we.ve tested', r'best .{0,20} right now',
+    r'best .{0,40} overall',
+    r'\d+ best', r'top \d+ ',
+    r'buyer.s guide',
+    r'to buy in 20[2-3]\d', r'for 20[2-3]\d\)',
+    r'Democrat(s|ic)?',
+    r'left.wing', r'right.wing',
+    r'inaugur', r'polling\b',
+    r'op.ed\b', r'shutdown\b', r'primary\b',
+]
+
+# Build one compiled regex from both lists
+_JUNK_PATTERNS = re.compile(
+    r'|'.join(
+        [r'\b' + re.escape(kw) + r'\b' for kw in _JUNK_KEYWORDS]
+        + [r'\b' + p for p in _JUNK_REGEX]
+    ),
+    re.IGNORECASE,
+)
 
 
 def _is_junk_title(title: str) -> bool:
@@ -85,35 +134,35 @@ SCAM_TIPS = [
         "category": "SCAM ALERT",
         "headline": "Pop-ups Like This Are FAKE",
         "action": "Close your browser. Don't call the number. Bring it to us.",
-        "image": "/static/scam-images/fake-virus-popup.png",
+        "image": "/static/scam-images/fake-virus-popup.svg",
     },
     {
         "type": "scam",
         "category": "SCAM ALERT",
         "headline": "This Screen Is Lying To You",
         "action": "Press Ctrl+Alt+Delete. Close your browser. You're fine.",
-        "image": "/static/scam-images/browser-lockscreen.png",
+        "image": "/static/scam-images/browser-lockscreen.svg",
     },
     {
         "type": "scam",
         "category": "SCAM ALERT",
         "headline": "This Text Is a Scam",
         "action": "Don't click. Check tracking on the real site or app.",
-        "image": "/static/scam-images/fake-package-text.png",
+        "image": "/static/scam-images/fake-package-text.svg",
     },
     {
         "type": "scam",
         "category": "SCAM ALERT",
         "headline": "Your Bank Won't Text Like This",
         "action": "Delete it. Call the number on the back of your card.",
-        "image": "/static/scam-images/fake-bank-text.png",
+        "image": "/static/scam-images/fake-bank-text.svg",
     },
     {
         "type": "scam",
         "category": "SCAM ALERT",
         "headline": "This 'Free Scan' Will Infect You",
         "action": "Don't download it. Windows already protects you for free.",
-        "image": "/static/scam-images/fake-antivirus.png",
+        "image": "/static/scam-images/fake-antivirus.svg",
     },
     {
         "type": "scam",
@@ -127,7 +176,7 @@ SCAM_TIPS = [
         "category": "SCAM ALERT",
         "headline": "Never Let a Stranger Into Your PC",
         "action": "If someone asks you to install remote software, hang up.",
-        "image": "/static/scam-images/remote-access-prompt.png",
+        "image": "/static/scam-images/remote-access-prompt.svg",
     },
     {
         "type": "scam",
@@ -141,7 +190,7 @@ SCAM_TIPS = [
         "category": "SCAM ALERT",
         "headline": "This Email Isn't From Apple",
         "action": "Don't click links in emails. Go to the website yourself.",
-        "image": "/static/scam-images/fake-apple-email.png",
+        "image": "/static/scam-images/fake-apple-email.svg",
     },
     {
         "type": "scam",
@@ -276,11 +325,16 @@ def parse_rss_feeds() -> List[Dict]:
             continue
     
     logger.info(f"Successfully fetched {successful_feeds}/{len(RSS_FEEDS)} feeds, {len(all_items)} total items")
-    
+
+    # Filter out articles older than 7 days
+    cutoff = time.time() - 7 * 86400
+    fresh_items = [item for item in all_items if item['timestamp'] >= cutoff]
+    logger.info(f"After stale filter: {len(fresh_items)} items (dropped {len(all_items) - len(fresh_items)} old articles)")
+
     # Sort by timestamp (newest first)
-    all_items.sort(key=lambda x: x['timestamp'], reverse=True)
-    
-    return all_items
+    fresh_items.sort(key=lambda x: x['timestamp'], reverse=True)
+
+    return fresh_items
 
 
 def _fetch_feeds_background():
@@ -327,7 +381,9 @@ def get_cached_feeds() -> List[Dict]:
 @app.route('/')
 def index():
     """Render the main slideshow page."""
-    return render_template('index.html')
+    return render_template('index.html',
+                           config=BUSINESS_CONFIG,
+                           config_json=json.dumps(BUSINESS_CONFIG))
 
 
 @app.route('/api/feeds')

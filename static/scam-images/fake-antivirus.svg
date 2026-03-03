@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" fill="none">
+  <!-- Dark window background -->
+  <rect width="480" height="360" rx="12" fill="#1a1a2e"/>
+  <!-- Window title bar -->
+  <rect y="0" width="480" height="36" rx="12" fill="#2d2d44"/>
+  <rect y="12" width="480" height="24" fill="#2d2d44"/>
+  <circle cx="18" cy="18" r="6" fill="#ff5f57"/>
+  <circle cx="38" cy="18" r="6" fill="#ffbd2e"/>
+  <circle cx="58" cy="18" r="6" fill="#28c940"/>
+  <text x="240" y="23" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#999">PC Shield Pro - Security Scanner</text>
+  <!-- Fake shield icon -->
+  <g transform="translate(200, 50)">
+    <path d="M40,5 L70,18 V45 C70,65 55,78 40,85 C25,78 10,65 10,45 V18 Z" fill="#cc0000" opacity="0.9"/>
+    <text x="40" y="55" text-anchor="middle" font-family="Arial,sans-serif" font-size="28" font-weight="bold" fill="white">!</text>
+  </g>
+  <!-- Scan results -->
+  <text x="240" y="110" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" font-weight="bold" fill="#ff4444">23 Threats Found!</text>
+  <text x="240" y="132" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#aaa">Your computer is at serious risk</text>
+  <!-- Progress bar -->
+  <rect x="60" y="148" width="360" height="20" rx="10" fill="#2a2a40"/>
+  <rect x="60" y="148" width="340" height="20" rx="10" fill="#cc0000"/>
+  <text x="240" y="162" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="white">SCAN COMPLETE - 94%</text>
+  <!-- Fake threat list -->
+  <g font-family="monospace" font-size="10" fill="#ff6666">
+    <text x="70" y="190">Trojan.GenericKD.46850234</text><text x="370" y="190" fill="#ff4444">HIGH</text>
+    <text x="70" y="208">Spyware.PasswordStealer.B</text><text x="370" y="208" fill="#ff4444">HIGH</text>
+    <text x="70" y="226">Adware.BrowserHijack.Win32</text><text x="370" y="226" fill="#ffaa00">MED</text>
+    <text x="70" y="244">PUP.CryptoMiner.Agent</text><text x="370" y="244" fill="#ff4444">HIGH</text>
+    <text x="70" y="262">Worm.Autorun.VB.Gen</text><text x="370" y="262" fill="#ffaa00">MED</text>
+  </g>
+  <!-- CTA Button -->
+  <rect x="130" y="285" width="220" height="42" rx="8" fill="#ff4444"/>
+  <text x="240" y="312" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="white">REMOVE THREATS NOW</text>
+  <text x="240" y="345" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#666">Annual license: $49.99/year - Charges apply immediately</text>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" fill="none">
+  <!-- Browser chrome -->
+  <rect width="480" height="360" rx="12" fill="#1a1a2e"/>
+  <rect y="0" width="480" height="36" rx="12" fill="#2d2d44"/>
+  <rect y="12" width="480" height="24" fill="#2d2d44"/>
+  <circle cx="18" cy="18" r="6" fill="#ff5f57"/>
+  <circle cx="38" cy="18" r="6" fill="#ffbd2e"/>
+  <circle cx="58" cy="18" r="6" fill="#28c940"/>
+  <rect x="80" y="10" width="320" height="16" rx="8" fill="#1a1a2e"/>
+  <!-- Red warning background -->
+  <rect x="20" y="50" width="440" height="290" rx="8" fill="#cc0000"/>
+  <!-- Warning icon -->
+  <polygon points="240,80 270,130 210,130" fill="#ffcc00" stroke="#cc0000" stroke-width="2"/>
+  <text x="240" y="122" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" font-weight="bold" fill="#cc0000">!</text>
+  <!-- Alert text -->
+  <text x="240" y="165" text-anchor="middle" font-family="Arial,sans-serif" font-size="22" font-weight="bold" fill="white">YOUR PC IS INFECTED!</text>
+  <text x="240" y="195" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#ffcccc">Windows has detected (5) viruses on your computer.</text>
+  <text x="240" y="215" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#ffcccc">Your personal data and banking info are at risk.</text>
+  <!-- Fake phone number -->
+  <rect x="120" y="235" width="240" height="40" rx="6" fill="#ffcc00"/>
+  <text x="240" y="261" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="#cc0000">CALL NOW: 1-888-555-0199</text>
+  <!-- Fine print -->
+  <text x="240" y="305" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#ffaaaa">Do not close this window. Your computer has been locked.</text>
+  <text x="240" y="320" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#ffaaaa">Contact Microsoft Certified Technicians immediately.</text>
+</svg>

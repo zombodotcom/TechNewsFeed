@@ -4,11 +4,11 @@ Tests for Tech News RSS Slideshow Feed
 import unittest
 from unittest.mock import patch, MagicMock
 import time
-from app import app, parse_rss_feeds, get_cached_feeds, feed_cache
+from app import app, parse_rss_feeds, get_cached_feeds, feed_cache, BUSINESS_CONFIG
 
 
 class TestRSSFeeds(unittest.TestCase):
-    
+
     def setUp(self):
         """Set up test fixtures."""
         self.app = app.test_client()
@@ -17,13 +17,26 @@ class TestRSSFeeds(unittest.TestCase):
         feed_cache['items'] = []
         feed_cache['last_update'] = 0
         feed_cache['fetching'] = False
-    
+
     def test_index_route(self):
         """Test that index page loads."""
         response = self.app.get('/')
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Northwoods', response.data)
-    
+
+    def test_index_uses_config_values(self):
+        """Test that index page renders config values from config.json."""
+        response = self.app.get('/')
+        self.assertIn(BUSINESS_CONFIG['phone'].encode(), response.data)
+        self.assertIn(BUSINESS_CONFIG['business_name'].encode(), response.data)
+        self.assertIn(BUSINESS_CONFIG['hours_text'].encode(), response.data)
+
+    def test_index_includes_config_json_block(self):
+        """Test that index page includes the appConfig JSON block for JS."""
+        response = self.app.get('/')
+        self.assertIn(b'id="appConfig"', response.data)
+        self.assertIn(b'application/json', response.data)
+
     def test_feeds_api_returns_json(self):
         """Test that /api/feeds returns JSON."""
         response = self.app.get('/api/feeds')
@@ -32,7 +45,7 @@ class TestRSSFeeds(unittest.TestCase):
         data = response.get_json()
         self.assertIn('success', data)
         self.assertIn('items', data)
-    
+
     def test_feeds_api_structure(self):
         """Test that /api/feeds returns correct structure."""
         response = self.app.get('/api/feeds')
@@ -40,14 +53,14 @@ class TestRSSFeeds(unittest.TestCase):
         self.assertIsInstance(data['items'], list)
         self.assertIsInstance(data['count'], int)
         self.assertIn('last_update', data)
-    
+
     def test_refresh_api(self):
         """Test that /api/refresh works."""
         response = self.app.get('/api/refresh')
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
         self.assertIn('success', data)
-    
+
     @patch('app.feedparser.parse')
     @patch('app.RSS_FEEDS', [{"url": "https://test.com/feed", "category": "tech_news", "badge": "TECH NEWS"}])
     def test_parse_rss_feeds_handles_errors(self, mock_parse):
@@ -62,7 +75,7 @@ class TestRSSFeeds(unittest.TestCase):
         self.assertIsInstance(result, list)
         # Should return empty list when all feeds fail
         self.assertEqual(len(result), 0)
-    
+
     @patch('app.feedparser.parse')
     @patch('app.RSS_FEEDS', [{"url": "https://test.com/feed", "category": "tech_news", "badge": "TECH NEWS"}])
     def test_parse_rss_feeds_success(self, mock_parse):
@@ -91,17 +104,17 @@ class TestRSSFeeds(unittest.TestCase):
         result = parse_rss_feeds()
         self.assertGreater(len(result), 0)
         self.assertEqual(result[0]['title'], 'Test Title')
-    
+
     def test_get_cached_feeds_returns_list(self):
         """Test that get_cached_feeds always returns a list."""
         result = get_cached_feeds()
         self.assertIsInstance(result, list)
-    
+
     def test_cache_expiration(self):
         """Test that cache expires after duration."""
         feed_cache['last_update'] = time.time() - 400  # 400 seconds ago
         feed_cache['items'] = [{'test': 'data'}]
-        
+
         with patch('app.parse_rss_feeds') as mock_parse:
             mock_parse.return_value = [{'new': 'data'}]
             result = get_cached_feeds()
@@ -188,6 +201,33 @@ class TestJunkFilter(unittest.TestCase):
         for title in junk:
             self.assertTrue(_is_junk_title(title), f"Should filter: {title}")
 
+    def test_filters_political_content(self):
+        """Test that political/partisan titles get filtered."""
+        from app import _is_junk_title
+        political = [
+            "Medical journal The Lancet blasts RFK Jr.'s health work as a failure",
+            "Trump signs executive order on AI regulation",
+            "Biden administration announces new tech policy",
+            "Republican lawmakers push back on FTC ruling",
+            "Democrat senator introduces privacy bill",
+            "GOP split on tech antitrust approach",
+            "White House announces cybersecurity initiative",
+            "Elon Musk clashes with lawmakers over DOGE cuts",
+            "HHS slashes funding for health tech programs",
+            "Supreme Court to hear social media censorship case",
+            "Congress passes sweeping tech regulation bill",
+            "Senate votes to ban TikTok amid partisan divide",
+            "Obama warns about AI deepfakes in new interview",
+            "DeSantis targets woke tech companies",
+            "AOC grills tech CEO in heated hearing",
+            "Lawmakers demand answers from Google on immigration data",
+            "Abortion access app removed from app store after conservative backlash",
+            "DEI policies shake up Silicon Valley hiring",
+            "The op-ed that changed the AI safety debate",
+        ]
+        for title in political:
+            self.assertTrue(_is_junk_title(title), f"Should filter: {title}")
+
     def test_keeps_real_news(self):
         """Test that real news titles pass through."""
         from app import _is_junk_title
@@ -225,6 +265,14 @@ class TestScamTips(unittest.TestCase):
         from app import SCAM_TIPS
         self.assertIn('Just Ask Us', SCAM_TIPS[-1]['headline'])
 
+    def test_scam_tips_images_are_svg(self):
+        """Test that all scam tip images use .svg extension."""
+        from app import SCAM_TIPS
+        for tip in SCAM_TIPS:
+            if tip['image'] is not None:
+                self.assertTrue(tip['image'].endswith('.svg'),
+                                f"Expected .svg: {tip['image']}")
+
     def test_scam_tips_api_returns_new_format(self):
         """Test /api/scam-tips returns tips with headline/action fields."""
         self.app_client = app.test_client()
@@ -238,37 +286,138 @@ class TestScamTips(unittest.TestCase):
         self.assertEqual(first_tip['type'], 'scam')
 
 
+class TestStaleArticleFilter(unittest.TestCase):
+    """Test that articles older than 7 days are filtered out."""
+
+    @patch('app.feedparser.parse')
+    @patch('app.RSS_FEEDS', [{"url": "https://test.com/feed", "category": "tech_news", "badge": "TECH NEWS"}])
+    def test_stale_articles_dropped(self, mock_parse):
+        """Articles older than 7 days should be excluded."""
+        now = time.localtime()
+        old_time = time.localtime(time.time() - 10 * 86400)  # 10 days ago
+
+        mock_feed = MagicMock()
+        mock_feed.bozo = False
+        mock_feed.entries = [
+            # Fresh article
+            MagicMock(
+                get=MagicMock(side_effect=lambda key, default=None: {
+                    'title': 'Fresh Article',
+                    'link': 'http://test.com/fresh',
+                    'summary': 'Fresh summary',
+                    'published': '2026-03-03',
+                    'published_parsed': now
+                }.get(key, default)),
+                media_content=[], media_thumbnail=[], enclosures=[], image=None
+            ),
+            # Stale article (10 days old)
+            MagicMock(
+                get=MagicMock(side_effect=lambda key, default=None: {
+                    'title': 'Stale Article',
+                    'link': 'http://test.com/stale',
+                    'summary': 'Old summary',
+                    'published': '2026-02-21',
+                    'published_parsed': old_time
+                }.get(key, default)),
+                media_content=[], media_thumbnail=[], enclosures=[], image=None
+            ),
+        ]
+        mock_feed.feed.get.return_value = 'Test Source'
+        mock_parse.return_value = mock_feed
+
+        result = parse_rss_feeds()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['title'], 'Fresh Article')
+
+    @patch('app.feedparser.parse')
+    @patch('app.RSS_FEEDS', [{"url": "https://test.com/feed", "category": "tech_news", "badge": "TECH NEWS"}])
+    def test_articles_within_7_days_kept(self, mock_parse):
+        """Articles within 7 days should be kept."""
+        recent_time = time.localtime(time.time() - 5 * 86400)  # 5 days ago
+
+        mock_feed = MagicMock()
+        mock_feed.bozo = False
+        mock_feed.entries = [
+            MagicMock(
+                get=MagicMock(side_effect=lambda key, default=None: {
+                    'title': 'Recent Article',
+                    'link': 'http://test.com/recent',
+                    'summary': 'Recent summary',
+                    'published': '2026-02-26',
+                    'published_parsed': recent_time
+                }.get(key, default)),
+                media_content=[], media_thumbnail=[], enclosures=[], image=None
+            ),
+        ]
+        mock_feed.feed.get.return_value = 'Test Source'
+        mock_parse.return_value = mock_feed
+
+        result = parse_rss_feeds()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['title'], 'Recent Article')
+
+
+class TestConfigLoading(unittest.TestCase):
+    """Test that business config is loaded correctly."""
+
+    def test_config_has_required_keys(self):
+        """Config must have all required fields."""
+        required = ['business_name', 'phone', 'hours_text', 'open_days', 'open_time', 'close_time']
+        for key in required:
+            self.assertIn(key, BUSINESS_CONFIG, f"Missing config key: {key}")
+
+    def test_config_values_are_correct_types(self):
+        """Config values should be the expected types."""
+        self.assertIsInstance(BUSINESS_CONFIG['business_name'], str)
+        self.assertIsInstance(BUSINESS_CONFIG['phone'], str)
+        self.assertIsInstance(BUSINESS_CONFIG['hours_text'], str)
+        self.assertIsInstance(BUSINESS_CONFIG['open_days'], list)
+        self.assertIsInstance(BUSINESS_CONFIG['open_time'], str)
+        self.assertIsInstance(BUSINESS_CONFIG['close_time'], str)
+
+    def test_open_days_are_valid(self):
+        """Open days should be valid day-of-week numbers (0-6)."""
+        for day in BUSINESS_CONFIG['open_days']:
+            self.assertIn(day, range(7))
+
+    def test_config_passed_to_template(self):
+        """Config should be available in the rendered template."""
+        client = app.test_client()
+        response = client.get('/')
+        self.assertIn(BUSINESS_CONFIG['business_name'].encode(), response.data)
+
+
 class TestSlideshowLogic(unittest.TestCase):
     """Test slideshow JavaScript logic (simulated)."""
-    
+
     def test_slide_looping_logic(self):
         """Test that slide index loops correctly."""
         total_slides = 10
-        
+
         # Simulate nextSlide logic
         current_slide = 0
         for i in range(15):  # Go past the end
             current_slide = (current_slide + 1) % total_slides
             self.assertGreaterEqual(current_slide, 0)
             self.assertLess(current_slide, total_slides)
-        
+
         # Should have looped back
         self.assertEqual(current_slide, 5)  # 15 % 10 = 5
-    
+
     def test_slide_wraps_to_zero(self):
         """Test that slide wraps to 0 after last slide."""
         total_slides = 5
         current_slide = 4  # Last slide
-        
+
         # Next should wrap to 0
         next_slide = (current_slide + 1) % total_slides
         self.assertEqual(next_slide, 0)
-    
+
     def test_previous_slide_wraps(self):
         """Test that previous slide wraps to last."""
         total_slides = 5
         current_slide = 0  # First slide
-        
+
         # Previous should wrap to last
         prev_slide = (current_slide - 1 + total_slides) % total_slides
         self.assertEqual(prev_slide, 4)
@@ -276,4 +425,3 @@ class TestSlideshowLogic(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
