@@ -21,21 +21,21 @@ app = Flask(__name__)
 
 # Curated tech news RSS feeds with categories
 RSS_FEEDS = [
-    # General Tech News
+    # General Tech News (editorial, not product reviews)
     {"url": "https://www.theverge.com/rss/index.xml", "category": "tech_news", "badge": "TECH NEWS"},
     {"url": "https://feeds.arstechnica.com/arstechnica/index", "category": "tech_news", "badge": "TECH NEWS"},
-    {"url": "https://www.engadget.com/rss.xml", "category": "tech_news", "badge": "TECH NEWS"},
-    # Tips & How-To
+    {"url": "https://www.techmeme.com/feed.xml", "category": "tech_news", "badge": "TECH NEWS"},
+    # Tips & How-To (educational, not product roundups)
     {"url": "https://www.howtogeek.com/feed/", "category": "tech_tip", "badge": "TECH TIP"},
-    {"url": "https://www.tomsguide.com/feeds/all", "category": "tech_tip", "badge": "TECH TIP"},
     # Security & Scams
     {"url": "https://krebsonsecurity.com/feed/", "category": "security", "badge": "SECURITY"},
-    {"url": "https://www.malwarebytes.com/blog/feed", "category": "security", "badge": "SECURITY"},
     {"url": "https://www.bleepingcomputer.com/feed/", "category": "security", "badge": "SECURITY"},
+    {"url": "https://feeds.feedburner.com/TheHackersNews", "category": "security", "badge": "SECURITY"},
     # Official / Government
     {"url": "https://www.ftc.gov/feeds/press-release-consumer-protection.xml", "category": "official", "badge": "CONSUMER ALERT"},
-    # Broader Tech
+    # Broader Tech & Science
     {"url": "https://www.wired.com/feed/rss", "category": "broad_tech", "badge": "TECH & SCIENCE"},
+    {"url": "https://arstechnica.com/science/feed/", "category": "broad_tech", "badge": "TECH & SCIENCE"},
 ]
 
 # Badge color mapping (used by frontend)
