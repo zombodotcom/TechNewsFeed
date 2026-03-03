@@ -32,7 +32,6 @@ RSS_FEEDS = [
     # Official / Government
     {"url": "https://www.ftc.gov/feeds/press-release-consumer-protection.xml", "category": "official", "badge": "CONSUMER ALERT"},
     # Broader Tech & Science
-    {"url": "https://www.wired.com/feed/rss", "category": "broad_tech", "badge": "TECH & SCIENCE"},
     {"url": "https://arstechnica.com/science/feed/", "category": "broad_tech", "badge": "TECH & SCIENCE"},
 ]
 
