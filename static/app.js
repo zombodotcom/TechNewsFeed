@@ -92,6 +92,16 @@ function getCategoryIcon(badge) {
     return CATEGORY_ICONS[badge] || DEFAULT_ICON;
 }
 
+// ---- Auto-shrink long headlines ----
+function shrinkToFit(el, minPx) {
+    // If text is overflowing (clamped), step the font size down until it fits
+    var size = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollHeight > el.clientHeight && size > minPx) {
+        size -= 1;
+        el.style.fontSize = size + 'px';
+    }
+}
+
 // ---- Data Fetching ----
 async function fetchFeeds(retryCount) {
     retryCount = retryCount || 0;
@@ -310,6 +320,12 @@ function renderFeatured(item) {
     // Force reflow for transition
     void card.offsetWidth;
     card.classList.add('active');
+
+    // Auto-shrink headline if it overflows
+    if (!isScam) {
+        var h = card.querySelector('.featured-headline');
+        if (h) shrinkToFit(h, 14);
+    }
 
     // Start progress bar animation
     startProgressBar(isScam ? FEATURED_SCAM_DURATION : FEATURED_DURATION);
