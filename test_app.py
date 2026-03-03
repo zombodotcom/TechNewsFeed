@@ -172,12 +172,18 @@ class TestJunkFilter(unittest.TestCase):
         junk = [
             "LL Bean coupon: save 20% on jackets",
             "Best laptops to buy in 2026",
+            "Best Pajamas for Women (2026), WIRED Tested and Reviewed",
             "I tried the new Samsung phone and wow",
             "10 best headphones right now",
             "Top 5 monitors for gaming",
             "This gadget is under $50 and worth buying",
             "Save $200 on this TV deal",
             "50% off everything at Best Buy",
+            "The best robot vacuums we've tested",
+            "5 Oscar-winning Netflix movies to watch this weekend",
+            "Best noise-canceling headphones overall",
+            "All of Amazon's kid-friendly Kindles are on sale",
+            "Buying guide: the best laptops for students",
         ]
         for title in junk:
             self.assertTrue(_is_junk_title(title), f"Should filter: {title}")

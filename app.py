@@ -38,17 +38,29 @@ RSS_FEEDS = [
 
 # Filter out ad-like, deal, and clickbait titles
 _JUNK_PATTERNS = re.compile(r'|'.join([
-    r'\bcoupon\b', r'\bdeal(s)?\b', r'\bdiscount\b', r'\bsale\b',
+    # Shopping / deals
+    r'\bcoupon\b', r'\bdeal(s)?\b', r'\bdiscount\b', r'\bon sale\b',
     r'\bsave \$', r'\b\d+% off\b', r'\bpromo\b', r'\baffiliate\b',
     r'\bbuy now\b', r'\bshop now\b', r'\bclearance\b',
-    r'\bbest .{0,20} to buy\b', r'\bbest .{0,20} for 20\d\d\b',
-    r'\bbest .{0,20} we\'ve tested\b', r'\bbest .{0,20} right now\b',
     r'\bvoucher\b', r'\bsponsored\b', r'\bgift guide\b',
+    r'\bunder \$\d+', r'\bstarting at \$',
+    r'\bprice drop\b', r'\bprice cut\b',
+    # Product roundups / reviews
+    r'\bbest .{0,40}\b20[2-3]\d', r'\bbest .{0,20} to buy\b',
+    r'\bbest .{0,20} we.ve tested\b', r'\bbest .{0,20} right now\b',
+    r'\bbest .{0,40} overall\b',
+    r'\b\d+ best\b', r'\btop \d+ \b',
+    r'\btested and reviewed\b', r'\breviewed and rated\b',
+    r'\bbuying guide\b', r'\bbuyer.s guide\b',
+    # Clickbait "I tried" / personal shopping
     r'\bI tried\b', r'\bwe tried\b', r'\bI tested\b', r'\bwe tested\b',
     r'\byou need to buy\b', r'\byou should buy\b',
     r'\bworth buying\b', r'\bworth the money\b',
-    r'\bunder \$\d+', r'\bstarting at \$',
-    r'\b\d+ best\b', r'\btop \d+ \b',
+    r'\bworth the price\b', r'\bworth every penny\b',
+    # Listicle product roundups
+    r'\bto buy in 20[2-3]\d', r'\bfor 20[2-3]\d\)',
+    r'\bto watch this weekend\b', r'\bto stream this weekend\b',
+    r'\bmovies to watch\b', r'\bshows to watch\b',
 ]), re.IGNORECASE)
 
 
