@@ -117,6 +117,7 @@ body::before {
     justify-content: center;
     padding: 40px 36px;
     min-width: 0;
+    overflow: hidden;
 }
 
 .featured-badge {
