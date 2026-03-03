@@ -123,9 +123,9 @@ class TestFeedCategories(unittest.TestCase):
             self.assertIn(feed['category'], ['tech_news', 'tech_tip', 'security', 'official', 'broad_tech'])
 
     def test_rss_feeds_count(self):
-        """Test we have 10 curated feeds."""
+        """Test we have 9 curated feeds."""
         from app import RSS_FEEDS
-        self.assertEqual(len(RSS_FEEDS), 10)
+        self.assertEqual(len(RSS_FEEDS), 9)
 
     def test_badge_colors_defined(self):
         """Test that BADGE_COLORS is defined for all badges used in feeds."""
@@ -163,6 +163,37 @@ class TestFeedCategories(unittest.TestCase):
         self.assertGreater(len(result), 0)
         self.assertEqual(result[0]['category'], 'tech_news')
         self.assertEqual(result[0]['badge'], 'TECH NEWS')
+
+
+class TestJunkFilter(unittest.TestCase):
+    def test_filters_deals_and_coupons(self):
+        """Test that ad/deal/clickbait titles get filtered."""
+        from app import _is_junk_title
+        junk = [
+            "LL Bean coupon: save 20% on jackets",
+            "Best laptops to buy in 2026",
+            "I tried the new Samsung phone and wow",
+            "10 best headphones right now",
+            "Top 5 monitors for gaming",
+            "This gadget is under $50 and worth buying",
+            "Save $200 on this TV deal",
+            "50% off everything at Best Buy",
+        ]
+        for title in junk:
+            self.assertTrue(_is_junk_title(title), f"Should filter: {title}")
+
+    def test_keeps_real_news(self):
+        """Test that real news titles pass through."""
+        from app import _is_junk_title
+        good = [
+            "Microsoft patches critical zero-day vulnerability",
+            "NASA launches new Mars rover mission",
+            "EU passes landmark AI regulation bill",
+            "How ransomware gangs are targeting hospitals",
+            "FTC sues company over deceptive practices",
+        ]
+        for title in good:
+            self.assertFalse(_is_junk_title(title), f"Should keep: {title}")
 
 
 class TestScamTips(unittest.TestCase):

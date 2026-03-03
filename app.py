@@ -25,8 +25,6 @@ RSS_FEEDS = [
     {"url": "https://www.theverge.com/rss/index.xml", "category": "tech_news", "badge": "TECH NEWS"},
     {"url": "https://feeds.arstechnica.com/arstechnica/index", "category": "tech_news", "badge": "TECH NEWS"},
     {"url": "https://www.techmeme.com/feed.xml", "category": "tech_news", "badge": "TECH NEWS"},
-    # Tips & How-To (educational, not product roundups)
-    {"url": "https://www.howtogeek.com/feed/", "category": "tech_tip", "badge": "TECH TIP"},
     # Security & Scams
     {"url": "https://krebsonsecurity.com/feed/", "category": "security", "badge": "SECURITY"},
     {"url": "https://www.bleepingcomputer.com/feed/", "category": "security", "badge": "SECURITY"},
@@ -37,6 +35,26 @@ RSS_FEEDS = [
     {"url": "https://www.wired.com/feed/rss", "category": "broad_tech", "badge": "TECH & SCIENCE"},
     {"url": "https://arstechnica.com/science/feed/", "category": "broad_tech", "badge": "TECH & SCIENCE"},
 ]
+
+# Filter out ad-like, deal, and clickbait titles
+_JUNK_PATTERNS = re.compile(r'|'.join([
+    r'\bcoupon\b', r'\bdeal(s)?\b', r'\bdiscount\b', r'\bsale\b',
+    r'\bsave \$', r'\b\d+% off\b', r'\bpromo\b', r'\baffiliate\b',
+    r'\bbuy now\b', r'\bshop now\b', r'\bclearance\b',
+    r'\bbest .{0,20} to buy\b', r'\bbest .{0,20} for 20\d\d\b',
+    r'\bbest .{0,20} we\'ve tested\b', r'\bbest .{0,20} right now\b',
+    r'\bvoucher\b', r'\bsponsored\b', r'\bgift guide\b',
+    r'\bI tried\b', r'\bwe tried\b', r'\bI tested\b', r'\bwe tested\b',
+    r'\byou need to buy\b', r'\byou should buy\b',
+    r'\bworth buying\b', r'\bworth the money\b',
+    r'\bunder \$\d+', r'\bstarting at \$',
+    r'\b\d+ best\b', r'\btop \d+ \b',
+]), re.IGNORECASE)
+
+
+def _is_junk_title(title: str) -> bool:
+    """Return True if the title looks like an ad, deal, or clickbait."""
+    return bool(_JUNK_PATTERNS.search(title))
 
 # Badge color mapping (used by frontend)
 BADGE_COLORS = {
@@ -207,8 +225,13 @@ def parse_rss_feeds() -> List[Dict]:
                 continue
 
             successful_feeds += 1
-            for entry in feed.entries[:10]:  # Limit to 10 items per feed
+            for entry in feed.entries[:15]:  # Check up to 15, some may be filtered
                 try:
+                    title = entry.get('title', 'No Title')
+                    if _is_junk_title(title):
+                        logger.info(f"Filtered junk title: {title}")
+                        continue
+
                     image_url = extract_image_url(entry)
 
                     # Handle published_parsed safely
