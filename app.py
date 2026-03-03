@@ -456,12 +456,15 @@ def scam_tips():
 
 
 if __name__ == '__main__':
-    # Start the Flask app immediately
     logger.info("Starting Tech News RSS Slideshow...")
-    logger.info("Site will load immediately, feeds will fetch in background...")
-    
-    # Run the Flask app
-    # Use host='0.0.0.0' to make it accessible on the network
-    # debug=True enables hot reloading and better error messages
+
+    # Pre-fetch feeds so the first page load has data immediately
+    logger.info("Fetching feeds on startup...")
+    initial = parse_rss_feeds()
+    if initial:
+        feed_cache['items'] = initial
+        feed_cache['last_update'] = time.time()
+        logger.info(f"Startup: cached {len(initial)} items")
+
     app.run(host='0.0.0.0', port=5000, debug=True)
 
