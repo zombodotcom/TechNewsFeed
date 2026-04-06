@@ -183,20 +183,57 @@ class TestJunkFilter(unittest.TestCase):
         """Test that ad/deal/clickbait titles get filtered."""
         from app import _is_junk_title
         junk = [
+            # Shopping / deals
             "LL Bean coupon: save 20% on jackets",
-            "Best laptops to buy in 2026",
-            "Best Pajamas for Women (2026), WIRED Tested and Reviewed",
-            "I tried the new Samsung phone and wow",
-            "10 best headphones right now",
-            "Top 5 monitors for gaming",
-            "This gadget is under $50 and worth buying",
             "Save $200 on this TV deal",
             "50% off everything at Best Buy",
-            "The best robot vacuums we've tested",
-            "5 Oscar-winning Netflix movies to watch this weekend",
-            "Best noise-canceling headphones overall",
             "All of Amazon's kid-friendly Kindles are on sale",
+            "This gadget is under $50 and worth buying",
+            "Buy two Nintendo Switch games, get $30 off at Target",
+            "Logitech MX Master 4 mouse is on sale for under $100",
+            # Listicles / "best of"
+            "Best laptops to buy in 2026",
+            "Best Pajamas for Women (2026), WIRED Tested and Reviewed",
+            "10 best headphones right now",
+            "Top 5 monitors for gaming",
+            "Best noise-canceling headphones overall",
+            "The best robot vacuums we've tested",
             "Buying guide: the best laptops for students",
+            "5 ways to speed up your old laptop",
+            "7 things you should know about iOS 20",
+            # Personal experience / "I did X"
+            "I tried the new Samsung phone and wow",
+            "I let Gemini in Google Maps plan my day and it went surprisingly well",
+            "I used ChatGPT for a week and here's what I learned",
+            "I switched to Linux for a month and I'm not going back",
+            "I replaced my MacBook with an iPad and it changed my mind",
+            "I ditched my iPhone for a Pixel and here's what happened",
+            "The Korg Handytraxx Play finally got me learning to scratch",
+            "I actually love this weird little gadget",
+            "I can't stop using this new AI tool",
+            "I ranked every streaming service and here's the winner",
+            "My dream pair of AR glasses needs to have these features",
+            # Reviews / hands-on / comparison
+            "Pixel 9 Pro hands-on: Google's best phone yet",
+            "Samsung Galaxy S26 first impressions",
+            "MacBook Air vs MacBook Pro: which should you buy?",
+            "Is it worth upgrading to the iPhone 17?",
+            "Galaxy Tab S10 unboxing and first look",
+            # Entertainment / streaming
+            "5 Oscar-winning Netflix movies to watch this weekend",
+            "He-Man gets an origin story in Masters of the Universe trailer",
+            "The official Minecraft Movie trailer is here",
+            "What Memento reveals about human nature, 25 years later",
+            "Stream this incredible documentary tonight",
+            # How-to / explainer
+            "How to set up a VPN on your router",
+            "Here's how to get the most out of your new iPhone",
+            "Here's everything Apple announced today",
+            # Podcast promos
+            "Why AI regulation is stalling — on the Vergecast",
+            "Cisco CEO Chuck Robbins on the future of networking — Decoder",
+            # Seasonal
+            "April Fools' Day 2026: the best and cringiest pranks",
         ]
         for title in junk:
             self.assertTrue(_is_junk_title(title), f"Should filter: {title}")
@@ -235,8 +272,20 @@ class TestJunkFilter(unittest.TestCase):
             "Microsoft patches critical zero-day vulnerability",
             "NASA launches new Mars rover mission",
             "EU passes landmark AI regulation bill",
-            "How ransomware gangs are targeting hospitals",
             "FTC sues company over deceptive practices",
+            "Google announces major Android security update",
+            "Apple releases emergency iOS patch for active exploit",
+            "Amazon Web Services suffers widespread outage",
+            "New ransomware strain targets healthcare systems",
+            "Intel reveals next-gen chip architecture",
+            "SpaceX successfully lands Starship booster",
+            "Signal adds post-quantum encryption to its protocol",
+            "Cloudflare blocks record-breaking DDoS attack",
+            "Windows 12 release date confirmed by Microsoft",
+            "USB-C becomes mandatory in EU starting next month",
+            "T-Mobile data breach exposes 40 million records",
+            "Scientists discover high-temperature superconductor",
+            "Firefox rolls out enhanced tracking protection",
         ]
         for title in good:
             self.assertFalse(_is_junk_title(title), f"Should keep: {title}")

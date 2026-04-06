@@ -56,18 +56,29 @@ RSS_FEEDS = [
 # Plain keywords / phrases — auto-wrapped with \b word boundaries.
 # Just add a string to the right list; no regex needed.
 _JUNK_KEYWORDS = {
-    # Shopping / deals / promos
+    # ── Shopping / deals / promos ──
     "coupon", "discount", "on sale", "promo", "affiliate",
     "buy now", "shop now", "clearance", "voucher", "sponsored",
     "gift guide", "price drop", "price cut",
     "tested and reviewed", "reviewed and rated",
     "buying guide",
-    "I tried", "we tried", "I tested", "we tested",
     "you need to buy", "you should buy",
     "worth buying", "worth the money", "worth the price", "worth every penny",
-    "to watch this weekend", "to stream this weekend",
-    "movies to watch", "shows to watch",
-    # Urgency / sales pressure
+    "get one free", "BOGO",
+
+    # ── Personal experience / "I used X" fluff ──
+    "I tried", "we tried", "I tested", "we tested",
+    "I let", "I used", "I spent", "I switched",
+    "I replaced", "I ditched", "I gave up",
+    "went surprisingly well", "changed my mind",
+    "and here's what happened", "here's what I learned",
+    "my dream", "my favorite", "my favourite",
+
+    # ── Product reviews / hands-on ──
+    "hands-on", "first look", "unboxing",
+    "first impressions", "early impressions",
+
+    # ── Urgency / sales pressure ──
     "last chance", "last day", "limited time", "act fast", "act now",
     "hurry", "don't miss", "don't wait", "before prices go up",
     "prices go up", "price goes up", "price increase",
@@ -82,7 +93,29 @@ _JUNK_KEYWORDS = {
     "get it before", "grab it before", "snag it before",
     "stock up", "selling fast", "selling out", "almost gone",
     "while supplies last", "while stocks last",
-    "get one free", "BOGO",
+
+    # ── Entertainment / streaming / media ──
+    "to watch this weekend", "to stream this weekend",
+    "movies to watch", "shows to watch",
+    "trailer",
+    "season finale", "series finale", "series premiere",
+    "binge", "bingeworthy",
+
+    # ── How-to / consumer guides ──
+    "step by step", "everything you need to know",
+    "what you need to know", "tips and tricks",
+
+    # ── Comparison shopping ──
+    "versus", "compared to",
+
+    # ── Podcast promos ──
+    "Vergecast", "Decoder",
+
+    # ── Seasonal fluff ──
+    "April Fools", "April Fool",
+
+    # ── Retailer names (always shopping context in headlines) ──
+    "at Target", "at Walmart", "at Best Buy", "at Costco", "at B&H",
 
     # ── Politics / partisan — keep the shop TV neutral ──
     # Figures
@@ -113,31 +146,70 @@ _JUNK_KEYWORDS = {
     "The Lancet", "editorial board",
 }
 
-# Patterns that need actual regex (wildcards, numbers, etc.)
+# Patterns that need actual regex (wildcards, numbers, etc.).
+# NOTE: these are NOT auto-prefixed with \b — each pattern manages its own
+# boundaries so that $-prefixed patterns and ^-anchored patterns work.
 _JUNK_REGEX = [
-    r'deal(s)?\b',
-    r'save \$', r'save (?:up to )?\d+', r'\d+% off', r'under \$\d+', r'starting at \$',
+    # ── Deals / pricing ──
+    r'\bdeal(s)?\b',
+    r'save \$', r'save (?:up to )?\d+', r'\d+% off',
+    r'under \$\d+', r'starting at \$',
     r'\$\d+.{0,10}\boff\b', r'for (?:just|only) \$\d+',
-    r'spring sale', r'summer sale', r'winter sale', r'fall sale',
-    r'big .{0,10} sale', r'mega sale',
-    r'you can (?:still )?(?:get|grab|snag)',
-    r'best .{0,40}\b20[2-3]\d', r'best .{0,20} to buy',
-    r'best .{0,20} we.ve tested', r'best .{0,20} right now',
-    r'best .{0,40} overall',
-    r'\d+ best', r'top \d+ ',
-    r'buyer.s guide',
-    r'to buy in 20[2-3]\d', r'for 20[2-3]\d\)',
-    r'Democrat(s|ic)?',
-    r'left.wing', r'right.wing',
-    r'inaugur', r'polling\b',
-    r'op.ed\b', r'shutdown\b', r'primary\b',
+    r'\bspring sale', r'\bsummer sale', r'\bwinter sale', r'\bfall sale',
+    r'\bbig .{0,10} sale', r'\bmega sale',
+    r'\byou can (?:still )?(?:get|grab|snag)',
+    r'\bbuy .{1,10},?\s*get\b',
+
+    # ── Listicles / "best of" ──
+    r'\bbest .{0,40}\b20[2-3]\d', r'\bbest .{0,20} to buy',
+    r'\bbest .{0,20} we.ve tested', r'\bbest .{0,20} right now',
+    r'\bbest .{0,40} overall',
+    r'\b\d+ best\b', r'\btop \d+ ',
+    r'\bbuyer.s guide',
+    r'\bto buy in 20[2-3]\d', r'for 20[2-3]\d\)',
+    r'\b\d+ (?:tips|ways|things|reasons) (?:for|to|you|why)\b',
+    r'\b\d+ (?:movies|shows|albums|songs|podcasts) (?:to|you)\b',
+
+    # ── Personal experience / "I did X" ──
+    r'\b(?:I|we) (?:finally|actually|really) .{0,20}(?:love|hate|need|want)\b',
+    r'\b(?:I|we) (?:can.t|cannot) (?:stop|quit|resist)\b',
+    r'\b(?:I|we) (?:ranked|rated|scored)\b',
+    r'\bfinally got me\b',
+    r'\bfor a (?:week|month|day|year)\b',
+    r'\bthis is my .{1,20}(?:time|attempt|try)\b',
+    r'\bmy .{1,30} needs? to have\b',
+
+    # ── Reviews / comparison ──
+    r'\b(?:is|are) (?:it|they) worth\b',
+    r'\bhow (?:good|bad) is\b',
+    r'\bvs\.?\s',
+    r'\bwhich (?:is|should you)\b',
+    r'\b(?:better|faster|cheaper) than\b',
+
+    # ── How-to / explainer ──
+    r'^how to ',
+    r'\bhere.s (?:how|what|why|everything)\b',
+
+    # ── Entertainment / streaming ──
+    r'\b(?:new|official|first|final|full) .{0,20}trailer\b',
+    r'\b(?:movie|film|show|series|season) (?:review|recap|premiere|finale)\b',
+    r'\b(?:watch|stream|listen to) (?:this|these|now|today|tonight)\b',
+    r'\bwhat .{1,30} reveals about\b',
+
+    # ── Politics (regex patterns) ──
+    r'\bDemocrat(s|ic)?\b',
+    r'\bleft.wing', r'\bright.wing',
+    r'\binaugur', r'\bpolling\b',
+    r'\bop.ed\b', r'\bshutdown\b', r'\bprimary\b',
 ]
 
 # Build one compiled regex from both lists
 _JUNK_PATTERNS = re.compile(
     r'|'.join(
+        # Keywords get auto-wrapped with \b
         [r'\b' + re.escape(kw) + r'\b' for kw in _JUNK_KEYWORDS]
-        + [r'\b' + p for p in _JUNK_REGEX]
+        # Regex patterns manage their own boundaries (no auto \b)
+        + _JUNK_REGEX
     ),
     re.IGNORECASE,
 )
