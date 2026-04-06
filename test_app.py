@@ -423,5 +423,352 @@ class TestSlideshowLogic(unittest.TestCase):
         self.assertEqual(prev_slide, 4)
 
 
+class TestImageExtraction(unittest.TestCase):
+    """Test extract_image_url with different RSS entry formats."""
+
+    def _make_entry(self, **kwargs):
+        """Build a minimal mock RSS entry."""
+        entry = MagicMock()
+        # By default nothing is present
+        entry.media_content = kwargs.get('media_content', [])
+        entry.media_thumbnail = kwargs.get('media_thumbnail', [])
+        entry.enclosures = kwargs.get('enclosures', [])
+        entry.image = kwargs.get('image', None)
+        entry.get = MagicMock(side_effect=lambda k, d=None: kwargs.get(k, d))
+        # Control hasattr
+        for attr in ('media_content', 'media_thumbnail', 'enclosures', 'image'):
+            if attr not in kwargs:
+                delattr(entry, attr)
+        return entry
+
+    def test_extracts_from_media_content(self):
+        from app import extract_image_url
+        entry = self._make_entry(
+            media_content=[{'type': 'image/jpeg', 'url': 'http://img.com/a.jpg'}]
+        )
+        self.assertEqual(extract_image_url(entry), 'http://img.com/a.jpg')
+
+    def test_extracts_from_media_thumbnail(self):
+        from app import extract_image_url
+        entry = self._make_entry(
+            media_thumbnail=[{'url': 'http://img.com/thumb.jpg'}]
+        )
+        self.assertEqual(extract_image_url(entry), 'http://img.com/thumb.jpg')
+
+    def test_extracts_from_enclosure(self):
+        from app import extract_image_url
+        entry = self._make_entry(
+            enclosures=[{'type': 'image/png', 'href': 'http://img.com/enc.png'}]
+        )
+        self.assertEqual(extract_image_url(entry), 'http://img.com/enc.png')
+
+    def test_extracts_from_summary_img_tag(self):
+        from app import extract_image_url
+        html = '<p>Text</p><img src="http://img.com/inline.jpg" alt="pic">'
+        entry = self._make_entry(summary=html)
+        self.assertEqual(extract_image_url(entry), 'http://img.com/inline.jpg')
+
+    def test_extracts_from_description_fallback(self):
+        from app import extract_image_url
+        html = '<img src="http://img.com/desc.jpg">'
+        entry = self._make_entry(description=html)
+        self.assertEqual(extract_image_url(entry), 'http://img.com/desc.jpg')
+
+    def test_extracts_from_image_field_dict(self):
+        from app import extract_image_url
+        entry = self._make_entry(image={'href': 'http://img.com/field.jpg'})
+        self.assertEqual(extract_image_url(entry), 'http://img.com/field.jpg')
+
+    def test_extracts_from_image_field_string(self):
+        from app import extract_image_url
+        entry = self._make_entry(image='http://img.com/plain.jpg')
+        self.assertEqual(extract_image_url(entry), 'http://img.com/plain.jpg')
+
+    def test_returns_none_when_no_image(self):
+        from app import extract_image_url
+        entry = self._make_entry()
+        self.assertIsNone(extract_image_url(entry))
+
+    def test_media_content_skips_non_image_types(self):
+        from app import extract_image_url
+        entry = self._make_entry(
+            media_content=[{'type': 'video/mp4', 'url': 'http://vid.com/v.mp4'}]
+        )
+        # Should fall through to None (no other sources)
+        self.assertIsNone(extract_image_url(entry))
+
+    def test_priority_media_content_over_thumbnail(self):
+        """media_content should be checked before media_thumbnail."""
+        from app import extract_image_url
+        entry = self._make_entry(
+            media_content=[{'type': 'image/jpeg', 'url': 'http://img.com/mc.jpg'}],
+            media_thumbnail=[{'url': 'http://img.com/thumb.jpg'}],
+        )
+        self.assertEqual(extract_image_url(entry), 'http://img.com/mc.jpg')
+
+
+class TestJunkFilterEdgeCases(unittest.TestCase):
+    """Edge cases for the title junk filter."""
+
+    def test_empty_title(self):
+        from app import _is_junk_title
+        self.assertFalse(_is_junk_title(''))
+
+    def test_case_insensitive(self):
+        from app import _is_junk_title
+        self.assertTrue(_is_junk_title('SAVE $50 ON THIS GADGET'))
+        self.assertTrue(_is_junk_title('save $50 on this gadget'))
+
+    def test_partial_word_not_matched(self):
+        """'deal' should not match 'ideal' or 'dealer' since we use word boundaries."""
+        from app import _is_junk_title
+        # 'ideal' contains 'deal' but should NOT be filtered
+        self.assertFalse(_is_junk_title('An ideal solution for network security'))
+
+    def test_filters_urgency_phrases(self):
+        from app import _is_junk_title
+        self.assertTrue(_is_junk_title("Last chance to get this device"))
+        self.assertTrue(_is_junk_title("Flash sale on smart home gear"))
+        self.assertTrue(_is_junk_title("Ends today: limited time pricing"))
+
+    def test_keeps_security_news(self):
+        from app import _is_junk_title
+        safe = [
+            "Critical vulnerability found in OpenSSL",
+            "Ransomware gang targets healthcare sector",
+            "New phishing technique bypasses MFA",
+            "FTC warns consumers about tech support scams",
+            "Google patches Chrome zero-day exploit",
+        ]
+        for title in safe:
+            self.assertFalse(_is_junk_title(title), f"Should keep: {title}")
+
+    def test_keeps_science_news(self):
+        from app import _is_junk_title
+        safe = [
+            "James Webb telescope discovers high-redshift galaxy",
+            "SpaceX launches Starship on test flight",
+            "CERN reports anomaly in particle collision data",
+        ]
+        for title in safe:
+            self.assertFalse(_is_junk_title(title), f"Should keep: {title}")
+
+
+class TestFeedLogging(unittest.TestCase):
+    """Test the feed history logging function."""
+
+    def test_log_feed_item_writes_to_file(self):
+        import os
+        import tempfile
+        from unittest.mock import patch as _patch
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.log', delete=False) as f:
+            tmp_path = f.name
+
+        try:
+            with _patch('app._FEED_LOG', tmp_path):
+                from app import _log_feed_item
+                _log_feed_item('SHOWN', 'Test Headline', 'Test Source')
+                _log_feed_item('FILTERED', 'Junk Title', 'Spam Feed')
+
+            with open(tmp_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+
+            self.assertEqual(len(lines), 2)
+            self.assertIn('SHOWN', lines[0])
+            self.assertIn('Test Headline', lines[0])
+            self.assertIn('FILTERED', lines[1])
+            self.assertIn('Junk Title', lines[1])
+        finally:
+            os.unlink(tmp_path)
+
+
+class TestFeedSorting(unittest.TestCase):
+    """Test that feeds are sorted newest-first."""
+
+    @patch('app.feedparser.parse')
+    @patch('app.RSS_FEEDS', [{"url": "https://test.com/feed", "category": "tech_news", "badge": "TECH NEWS"}])
+    def test_items_sorted_newest_first(self, mock_parse):
+        now = time.time()
+        entries = []
+        for i, age_hours in enumerate([48, 1, 24]):
+            ts = time.localtime(now - age_hours * 3600)
+            entry = MagicMock()
+            entry.get = MagicMock(side_effect=lambda k, d=None, _i=i, _ts=ts: {
+                'title': f'Article {_i}',
+                'link': f'http://test.com/{_i}',
+                'summary': 'Summary',
+                'published': '',
+                'published_parsed': _ts,
+            }.get(k, d))
+            entry.media_content = []
+            entry.media_thumbnail = []
+            entry.enclosures = []
+            entry.image = None
+            entries.append(entry)
+
+        mock_feed = MagicMock()
+        mock_feed.bozo = False
+        mock_feed.entries = entries
+        mock_feed.feed.get.return_value = 'Test Source'
+        mock_parse.return_value = mock_feed
+
+        result = parse_rss_feeds()
+        self.assertEqual(len(result), 3)
+        # Should be sorted newest first: Article 1 (1h), Article 2 (24h), Article 0 (48h)
+        self.assertEqual(result[0]['title'], 'Article 1')
+        self.assertEqual(result[1]['title'], 'Article 2')
+        self.assertEqual(result[2]['title'], 'Article 0')
+
+
+class TestFeedCacheConcurrency(unittest.TestCase):
+    """Test that the cache doesn't double-fetch."""
+
+    def setUp(self):
+        feed_cache['items'] = [{'title': 'cached'}]
+        feed_cache['last_update'] = 0  # expired
+        feed_cache['fetching'] = False
+
+    def test_returns_cached_data_immediately(self):
+        """get_cached_feeds should return stale data right away, not block."""
+        result = get_cached_feeds()
+        self.assertEqual(result, [{'title': 'cached'}])
+
+    def test_does_not_double_fetch(self):
+        """If already fetching, a second call should not start another fetch."""
+        feed_cache['fetching'] = True
+        with patch('app.threading.Thread') as mock_thread:
+            get_cached_feeds()
+            mock_thread.assert_not_called()
+
+    def test_empty_cache_returns_empty_list(self):
+        feed_cache['items'] = []
+        feed_cache['last_update'] = time.time()  # not expired
+        result = get_cached_feeds()
+        self.assertEqual(result, [])
+
+
+class TestAPIErrorHandling(unittest.TestCase):
+    """Test API endpoints handle errors gracefully."""
+
+    def setUp(self):
+        self.client = app.test_client()
+
+    def test_feeds_api_returns_count_matching_items(self):
+        feed_cache['items'] = [{'a': 1}, {'b': 2}]
+        feed_cache['last_update'] = time.time()
+        response = self.client.get('/api/feeds')
+        data = response.get_json()
+        self.assertEqual(data['count'], len(data['items']))
+
+    def test_scam_tips_api_count_matches(self):
+        response = self.client.get('/api/scam-tips')
+        data = response.get_json()
+        self.assertEqual(data['count'], len(data['items']))
+
+    @patch('app.get_cached_feeds', side_effect=Exception('db on fire'))
+    def test_feeds_api_500_on_exception(self, _mock):
+        response = self.client.get('/api/feeds')
+        self.assertEqual(response.status_code, 500)
+        data = response.get_json()
+        self.assertFalse(data['success'])
+        self.assertIn('error', data)
+
+    @patch('app.parse_rss_feeds', side_effect=Exception('network down'))
+    def test_refresh_api_500_on_exception(self, _mock):
+        feed_cache['items'] = [{'cached': True}]
+        response = self.client.get('/api/refresh')
+        self.assertEqual(response.status_code, 500)
+        data = response.get_json()
+        # Should still return cached items on error
+        self.assertEqual(data['items'], [{'cached': True}])
+
+    def test_refresh_returns_cached_when_no_new_items(self):
+        feed_cache['items'] = [{'old': True}]
+        with patch('app.parse_rss_feeds', return_value=[]):
+            response = self.client.get('/api/refresh')
+            data = response.get_json()
+            self.assertTrue(data['success'])
+            self.assertEqual(data['items'], [{'old': True}])
+
+
+class TestParseEdgeCases(unittest.TestCase):
+    """Edge cases in feed parsing."""
+
+    @patch('app.feedparser.parse')
+    @patch('app.RSS_FEEDS', [{"url": "https://test.com/feed", "category": "tech_news", "badge": "TECH NEWS"}])
+    def test_missing_published_parsed_uses_current_time(self, mock_parse):
+        """Entries without published_parsed should get current timestamp."""
+        mock_feed = MagicMock()
+        mock_feed.bozo = False
+        entry = MagicMock()
+        entry.get = MagicMock(side_effect=lambda k, d=None: {
+            'title': 'No Date Article',
+            'link': 'http://test.com',
+            'summary': 'Summary',
+            'published': '',
+            'published_parsed': None,
+        }.get(k, d))
+        entry.media_content = []
+        entry.media_thumbnail = []
+        entry.enclosures = []
+        entry.image = None
+        mock_feed.entries = [entry]
+        mock_feed.feed.get.return_value = 'Test Source'
+        mock_parse.return_value = mock_feed
+
+        before = time.time()
+        result = parse_rss_feeds()
+        after = time.time()
+
+        self.assertEqual(len(result), 1)
+        self.assertGreaterEqual(result[0]['timestamp'], before)
+        self.assertLessEqual(result[0]['timestamp'], after)
+
+    @patch('app.feedparser.parse')
+    @patch('app.RSS_FEEDS', [{"url": "https://test.com/feed", "category": "tech_news", "badge": "TECH NEWS"}])
+    def test_empty_entries_list(self, mock_parse):
+        """Feeds with empty entries should be skipped."""
+        mock_feed = MagicMock()
+        mock_feed.bozo = False
+        mock_feed.entries = []
+        mock_parse.return_value = mock_feed
+
+        result = parse_rss_feeds()
+        self.assertEqual(len(result), 0)
+
+    @patch('app.feedparser.parse')
+    @patch('app.RSS_FEEDS', [{"url": "https://test.com/feed", "category": "tech_news", "badge": "TECH NEWS"}])
+    def test_junk_titles_excluded_from_results(self, mock_parse):
+        """Filtered junk titles should not appear in results."""
+        mock_feed = MagicMock()
+        mock_feed.bozo = False
+        entries = []
+        for title in ['Real Security News', 'Best laptops to buy in 2026', 'New zero-day exploit found']:
+            entry = MagicMock()
+            entry.get = MagicMock(side_effect=lambda k, d=None, _t=title: {
+                'title': _t,
+                'link': 'http://test.com',
+                'summary': 'Summary',
+                'published': '',
+                'published_parsed': time.localtime(),
+            }.get(k, d))
+            entry.media_content = []
+            entry.media_thumbnail = []
+            entry.enclosures = []
+            entry.image = None
+            entries.append(entry)
+
+        mock_feed.entries = entries
+        mock_feed.feed.get.return_value = 'Test Source'
+        mock_parse.return_value = mock_feed
+
+        result = parse_rss_feeds()
+        titles = [r['title'] for r in result]
+        self.assertIn('Real Security News', titles)
+        self.assertIn('New zero-day exploit found', titles)
+        self.assertNotIn('Best laptops to buy in 2026', titles)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -16,9 +16,9 @@ let featuredTimer = null;
 let sidebarTimer = null;
 let progressTimer = null;
 
-const FEATURED_DURATION = 20000;     // 20s for news
-const FEATURED_SCAM_DURATION = 25000; // 25s for scam tips
-const SIDEBAR_DURATION = 15000;       // 15s
+const FEATURED_DURATION = 30000;     // 30s for news
+const FEATURED_SCAM_DURATION = 35000; // 35s for scam tips
+const SIDEBAR_DURATION = 25000;       // 25s
 const SIDEBAR_COUNT = 3;
 const AUTO_REFRESH_MS = 30 * 60 * 1000; // 30 min
 
@@ -64,7 +64,7 @@ function cleanHtml(html) {
     const d = document.createElement('div');
     d.innerHTML = html;
     let text = d.textContent || d.innerText || '';
-    if (text.length > 500) text = text.substring(0, 500) + '...';
+    if (text.length > 800) text = text.substring(0, 800) + '...';
     return text;
 }
 
@@ -324,7 +324,9 @@ function renderFeatured(item) {
     // Auto-shrink headline if it overflows
     if (!isScam) {
         var h = card.querySelector('.featured-headline');
-        if (h) shrinkToFit(h, 14);
+        if (h) shrinkToFit(h, 11);
+        var s = card.querySelector('.featured-summary');
+        if (s) shrinkToFit(s, 10);
     }
 
     // Start progress bar animation

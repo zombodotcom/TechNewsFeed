@@ -18,6 +18,17 @@ import threading
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ── Feed history log ────────────────────────────────────────
+_LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
+os.makedirs(_LOG_DIR, exist_ok=True)
+_FEED_LOG = os.path.join(_LOG_DIR, 'feed_history.log')
+
+def _log_feed_item(status: str, title: str, source: str):
+    """Append one line per item: timestamp | SHOWN/FILTERED | source | title"""
+    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    with open(_FEED_LOG, 'a', encoding='utf-8') as f:
+        f.write(f'{ts} | {status:<8} | {source:<35} | {title}\n')
+
 app = Flask(__name__)
 
 # Load business config
@@ -45,7 +56,7 @@ RSS_FEEDS = [
 # Plain keywords / phrases — auto-wrapped with \b word boundaries.
 # Just add a string to the right list; no regex needed.
 _JUNK_KEYWORDS = {
-    # Shopping / deals
+    # Shopping / deals / promos
     "coupon", "discount", "on sale", "promo", "affiliate",
     "buy now", "shop now", "clearance", "voucher", "sponsored",
     "gift guide", "price drop", "price cut",
@@ -56,6 +67,22 @@ _JUNK_KEYWORDS = {
     "worth buying", "worth the money", "worth the price", "worth every penny",
     "to watch this weekend", "to stream this weekend",
     "movies to watch", "shows to watch",
+    # Urgency / sales pressure
+    "last chance", "last day", "limited time", "act fast", "act now",
+    "hurry", "don't miss", "don't wait", "before prices go up",
+    "prices go up", "price goes up", "price increase",
+    "lowest price", "all-time low", "flash sale", "doorbuster",
+    "black friday", "cyber monday", "prime day", "amazon prime",
+    "early access", "exclusive offer", "special offer",
+    "ends today", "ends tonight", "ends soon", "ends tomorrow",
+    "hours left", "minutes left",
+    "add to cart", "checkout", "free shipping",
+    "just dropped", "just went on sale",
+    "massive savings", "huge savings", "big savings",
+    "get it before", "grab it before", "snag it before",
+    "stock up", "selling fast", "selling out", "almost gone",
+    "while supplies last", "while stocks last",
+    "get one free", "BOGO",
 
     # ── Politics / partisan — keep the shop TV neutral ──
     # Figures
@@ -89,7 +116,11 @@ _JUNK_KEYWORDS = {
 # Patterns that need actual regex (wildcards, numbers, etc.)
 _JUNK_REGEX = [
     r'deal(s)?\b',
-    r'save \$', r'\d+% off', r'under \$\d+', r'starting at \$',
+    r'save \$', r'save (?:up to )?\d+', r'\d+% off', r'under \$\d+', r'starting at \$',
+    r'\$\d+.{0,10}\boff\b', r'for (?:just|only) \$\d+',
+    r'spring sale', r'summer sale', r'winter sale', r'fall sale',
+    r'big .{0,10} sale', r'mega sale',
+    r'you can (?:still )?(?:get|grab|snag)',
     r'best .{0,40}\b20[2-3]\d', r'best .{0,20} to buy',
     r'best .{0,20} we.ve tested', r'best .{0,20} right now',
     r'best .{0,40} overall',
@@ -288,8 +319,10 @@ def parse_rss_feeds() -> List[Dict]:
             for entry in feed.entries[:15]:  # Check up to 15, some may be filtered
                 try:
                     title = entry.get('title', 'No Title')
+                    source_name = feed.feed.get('title', 'Unknown Source')
                     if _is_junk_title(title):
                         logger.info(f"Filtered junk title: {title}")
+                        _log_feed_item('FILTERED', title, source_name)
                         continue
 
                     image_url = extract_image_url(entry)
@@ -309,13 +342,14 @@ def parse_rss_feeds() -> List[Dict]:
                         'link': entry.get('link', '#'),
                         'summary': entry.get('summary', entry.get('description', 'No description available')),
                         'published': entry.get('published', ''),
-                        'source': feed.feed.get('title', 'Unknown Source'),
+                        'source': source_name,
                         'timestamp': timestamp,
                         'image': image_url,
                         'category': feed_info['category'],
                         'badge': feed_info['badge'],
                     }
                     all_items.append(item)
+                    _log_feed_item('SHOWN', title, source_name)
                 except Exception as e:
                     logger.warning(f"Error processing entry from {feed_url}: {str(e)}")
                     continue
