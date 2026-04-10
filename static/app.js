@@ -652,5 +652,16 @@ setInterval(function() {
     fetchFeeds();
 }, AUTO_REFRESH_MS);
 
+// Full page reload at 5:05 AM daily to pick up fresh server state
+(function scheduleDailyReload() {
+    var now = new Date();
+    var target = new Date(now);
+    target.setHours(5, 5, 0, 0);
+    if (now >= target) target.setDate(target.getDate() + 1);
+    var ms = target - now;
+    console.log('Page reload scheduled in ' + (ms/3600000).toFixed(1) + ' hours');
+    setTimeout(function() { location.reload(); }, ms);
+})();
+
 // Go!
 fetchFeeds();

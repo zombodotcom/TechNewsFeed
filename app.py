@@ -561,8 +561,48 @@ def scam_tips():
 
 
 
+def _daily_refresh_loop():
+    """Background thread that force-refreshes all feeds at 5:00 AM daily."""
+    while True:
+        now = datetime.now()
+        # Calculate seconds until next 5:00 AM
+        target = now.replace(hour=5, minute=0, second=0, microsecond=0)
+        if now >= target:
+            target = target.replace(day=target.day)  # later today already passed
+            from datetime import timedelta
+            target += timedelta(days=1)
+        wait_seconds = (target - now).total_seconds()
+        logger.info(f"Daily refresh scheduled in {wait_seconds/3600:.1f} hours (at {target})")
+        time.sleep(wait_seconds)
+
+        # Force a full feed refresh
+        logger.info("=== Daily 5 AM refresh triggered ===")
+        try:
+            new_items = parse_rss_feeds()
+            if new_items:
+                feed_cache['items'] = new_items
+                feed_cache['last_update'] = time.time()
+                logger.info(f"Daily refresh: cached {len(new_items)} items")
+        except Exception as e:
+            logger.error(f"Daily refresh failed: {e}")
+
+
+# Track server start time so the frontend knows when to reload
+_server_start_time = time.time()
+
+
+@app.route('/api/server-start')
+def server_start():
+    """Return server start time so the frontend can detect restarts."""
+    return jsonify({'start_time': _server_start_time})
+
+
 if __name__ == '__main__':
     logger.info("Starting Tech News RSS Slideshow...")
+
+    # Start daily 5 AM refresh thread
+    daily_thread = threading.Thread(target=_daily_refresh_loop, daemon=True)
+    daily_thread.start()
 
     # Pre-fetch feeds so the first page load has data immediately
     logger.info("Fetching feeds on startup...")
