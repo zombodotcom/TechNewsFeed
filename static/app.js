@@ -234,6 +234,13 @@ function shuffleByCategory(newsItems, scamItems) {
     // scattered, not clumped at the end. Pre-compute slot positions
     // by even spacing with a small random jitter so consecutive
     // rotations don't show tips in the exact same slots.
+    // Expand by `weight` first so high-priority tips repeat more often.
+    const weighted = [];
+    scamItems.forEach(function(t) {
+        const w = Math.max(1, t.weight || 1);
+        for (let k = 0; k < w; k++) weighted.push(t);
+    });
+    scamItems = weighted;
     shuffleArray(scamItems);
     const total = interleaved.length + scamItems.length;
     const scamSlots = new Set();

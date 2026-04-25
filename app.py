@@ -371,6 +371,7 @@ SCAM_TIPS = [
         "headline": "If You See These Apps — DELETE Them",
         "action": "These cleaner apps are scams. Bring your phone in — we'll remove them free.",
         "image": "/static/scam-images/cleaner-apps-wall-of-shame.png",
+        "weight": 3,
     },
     {
         "type": "scam",
