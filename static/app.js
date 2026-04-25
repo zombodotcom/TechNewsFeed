@@ -230,24 +230,36 @@ function shuffleByCategory(newsItems, scamItems) {
         }
     }
 
-    // Insert scam tips every 5th-6th position
+    // Distribute scam tips evenly across the entire feed so they're
+    // scattered, not clumped at the end. Pre-compute slot positions
+    // by even spacing with a small random jitter so consecutive
+    // rotations don't show tips in the exact same slots.
     shuffleArray(scamItems);
-    const result = [];
-    let scamIdx = 0;
-    let insertCounter = 0;
-    for (let i = 0; i < interleaved.length; i++) {
-        result.push(interleaved[i]);
-        insertCounter++;
-        if (insertCounter >= 5 && scamIdx < scamItems.length) {
-            result.push(scamItems[scamIdx]);
-            scamIdx++;
-            insertCounter = 0;
+    const total = interleaved.length + scamItems.length;
+    const scamSlots = new Set();
+    if (scamItems.length > 0) {
+        const gap = total / scamItems.length;
+        for (let i = 0; i < scamItems.length; i++) {
+            const base = (i + 0.5) * gap;
+            const jitter = (Math.random() - 0.5) * gap * 0.4;
+            let slot = Math.max(0, Math.min(total - 1, Math.floor(base + jitter)));
+            // Resolve collisions by walking forward
+            while (scamSlots.has(slot) && slot < total - 1) slot++;
+            scamSlots.add(slot);
         }
     }
-    // Append remaining scam tips
-    while (scamIdx < scamItems.length) {
-        result.push(scamItems[scamIdx]);
-        scamIdx++;
+
+    const result = [];
+    let newsIdx = 0;
+    let scamIdx = 0;
+    for (let i = 0; i < total; i++) {
+        if (scamSlots.has(i) && scamIdx < scamItems.length) {
+            result.push(scamItems[scamIdx++]);
+        } else if (newsIdx < interleaved.length) {
+            result.push(interleaved[newsIdx++]);
+        } else if (scamIdx < scamItems.length) {
+            result.push(scamItems[scamIdx++]);
+        }
     }
 
     return result;

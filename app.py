@@ -382,8 +382,8 @@ SCAM_TIPS = [
     {
         "type": "scam",
         "category": "SCAM ALERT",
-        "headline": "Deleting the App Doesn't Stop the $9 a Week",
-        "action": "Cleaner apps keep billing after you uninstall. Bring your phone in — we'll cancel it.",
+        "headline": "Deleting an App Doesn't Cancel It",
+        "action": "Subscriptions keep billing after you uninstall. Cancel in Settings → Subscriptions. We'll help.",
         "image": None,
     },
     {
@@ -391,13 +391,6 @@ SCAM_TIPS = [
         "category": "SCAM ALERT",
         "headline": "Your Phone Already Has a Cleaner — Free",
         "action": "iPhone: Settings → General → iPhone Storage. Android: Files app. No subscription. Ask us.",
-        "image": None,
-    },
-    {
-        "type": "scam",
-        "category": "SCAM ALERT",
-        "headline": "Don't Tap 'Subscribe' on a Calendar",
-        "action": "Fake CAPTCHAs hide a calendar subscription — that's where the virus alerts come from.",
         "image": None,
     },
     {
