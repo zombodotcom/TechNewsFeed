@@ -305,9 +305,9 @@ class TestScamTips(unittest.TestCase):
             self.assertIn('image', tip)
 
     def test_scam_tips_count(self):
-        """Test we have 16 scam tips."""
+        """Test we have 22 scam tips."""
         from app import SCAM_TIPS
-        self.assertEqual(len(SCAM_TIPS), 16)
+        self.assertEqual(len(SCAM_TIPS), 22)
 
     def test_scam_tips_last_is_cta(self):
         """Test last scam tip is the shop CTA."""
