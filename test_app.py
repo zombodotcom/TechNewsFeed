@@ -793,11 +793,11 @@ class TestParseEdgeCases(unittest.TestCase):
         mock_feed = MagicMock()
         mock_feed.bozo = False
         entries = []
-        for title in ['Real Security News', 'Best laptops to buy in 2026', 'New zero-day exploit found']:
+        for i, title in enumerate(['Real Security News', 'Best laptops to buy in 2026', 'New zero-day exploit found']):
             entry = MagicMock()
-            entry.get = MagicMock(side_effect=lambda k, d=None, _t=title: {
+            entry.get = MagicMock(side_effect=lambda k, d=None, _t=title, _i=i: {
                 'title': _t,
-                'link': 'http://test.com',
+                'link': f'http://test.com/article-{_i}',
                 'summary': 'Summary',
                 'published': '',
                 'published_parsed': time.localtime(),

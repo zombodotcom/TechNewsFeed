@@ -13,6 +13,12 @@ from typing import List, Dict, Optional
 import logging
 import re
 import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+try:
+    import requests
+except ImportError:
+    requests = None
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -126,6 +132,22 @@ _JUNK_KEYWORDS = {
 
     # ── Seasonal fluff ──
     "April Fools", "April Fool",
+
+    # ── Gaming / entertainment fluff ──
+    "PlayStation", "PS5", "PS4", "Nintendo Switch",
+    "Double Fine", "indie game", "indie games",
+    "video game", "video games", "videogame", "videogames",
+    "weirdest studio", "weirdest game",
+
+    # ── Non-tech science / nature / paleontology / medical fluff ──
+    "shark", "sharks", "octopus", "octopi", "parrot", "parrots",
+    "kraken", "mosasaur", "dinosaur", "dinosaurs",
+    "cretaceous", "jurassic", "triassic", "paleozoic", "cambrian",
+    "fossil", "fossils",
+    "ice age",
+    "chickenpox", "measles", "polio",
+    "Amelia Earhart",
+    "polygraph", "polygraphs",
 
     # ── Retailer names (always shopping context in headlines) ──
     "at Target", "at Walmart", "at Best Buy", "at Costco", "at B&H",
@@ -244,6 +266,22 @@ _JUNK_PATTERNS = re.compile(
 def _is_junk_title(title: str) -> bool:
     """Return True if the title looks like an ad, deal, or clickbait."""
     return bool(_JUNK_PATTERNS.search(title))
+
+
+# URL path segments that indicate non-tech content (gaming, entertainment, etc.)
+_JUNK_URL_SEGMENTS = (
+    '/games/', '/gaming/', '/entertainment/',
+    '/movies/', '/music/', '/tv/',
+    '/culture/', '/podcast/',
+    '/lifestyle/', '/wellness/',
+)
+
+
+def _is_junk_link(link: str) -> bool:
+    """Return True if the URL path indicates non-tech content."""
+    if not link:
+        return False
+    return any(seg in link.lower() for seg in _JUNK_URL_SEGMENTS)
 
 # Badge color mapping (used by frontend)
 BADGE_COLORS = {
@@ -383,8 +421,73 @@ def extract_image_url(entry) -> Optional[str]:
     # Method 4: Check for image field
     if hasattr(entry, 'image') and entry.image:
         return entry.image.get('href') if isinstance(entry.image, dict) else entry.image
-    
+
     return None
+
+
+# Cache og:image lookups so we don't re-fetch the same URL every refresh.
+_OG_IMAGE_CACHE: Dict[str, Optional[str]] = {}
+_OG_IMAGE_LOCK = threading.Lock()
+_OG_META_RE = re.compile(
+    r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']'
+    r'|<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+    re.IGNORECASE,
+)
+
+
+def fetch_og_image(article_url: str, timeout: float = 4.0) -> Optional[str]:
+    """Fetch the article URL and parse its og:image meta tag."""
+    if not article_url or requests is None:
+        return None
+    with _OG_IMAGE_LOCK:
+        if article_url in _OG_IMAGE_CACHE:
+            return _OG_IMAGE_CACHE[article_url]
+    result: Optional[str] = None
+    try:
+        resp = requests.get(
+            article_url,
+            timeout=timeout,
+            headers={
+                'User-Agent': (
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                    'AppleWebKit/537.36 (KHTML, like Gecko) '
+                    'Chrome/120.0.0.0 Safari/537.36'
+                )
+            },
+            stream=True,
+        )
+        # Only read the head — og:image is always in <head>
+        chunk = resp.raw.read(64 * 1024, decode_content=True)
+        html = chunk.decode('utf-8', errors='ignore')
+        resp.close()
+        m = _OG_META_RE.search(html)
+        if m:
+            result = m.group(1) or m.group(2)
+    except Exception as e:
+        logger.debug(f"og:image fetch failed for {article_url}: {e}")
+    with _OG_IMAGE_LOCK:
+        _OG_IMAGE_CACHE[article_url] = result
+    return result
+
+
+def backfill_missing_images(items: List[Dict], max_workers: int = 8) -> None:
+    """Fill in og:image for items missing an image. Mutates items in place."""
+    if requests is None:
+        return
+    needs_image = [it for it in items if not it.get('image') and it.get('link')]
+    if not needs_image:
+        return
+    logger.info(f"Backfilling og:image for {len(needs_image)} items")
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {pool.submit(fetch_og_image, it['link']): it for it in needs_image}
+        for fut in as_completed(futures):
+            it = futures[fut]
+            try:
+                img = fut.result()
+                if img:
+                    it['image'] = img
+            except Exception:
+                pass
 
 
 def parse_rss_feeds() -> List[Dict]:
@@ -396,8 +499,10 @@ def parse_rss_feeds() -> List[Dict]:
         List of dictionaries containing news item data
     """
     all_items = []
+    seen_links = set()
+    seen_titles = set()
     successful_feeds = 0
-    
+
     for feed_info in RSS_FEEDS:
         feed_url = feed_info['url']
         try:
@@ -422,6 +527,27 @@ def parse_rss_feeds() -> List[Dict]:
                         logger.info(f"Filtered junk title: {title}")
                         _log_feed_item('FILTERED', title, source_name)
                         continue
+
+                    raw_link = entry.get('link', '')
+                    if _is_junk_link(raw_link):
+                        logger.info(f"Filtered junk URL path: {raw_link}")
+                        _log_feed_item('FILTERED', title, source_name)
+                        continue
+
+                    # Dedupe across feeds — same article often cross-posts
+                    # (e.g. Ars main + Ars Science). Strip query strings so
+                    # tracking params don't defeat matching.
+                    link = entry.get('link', '').split('?')[0].rstrip('/').lower()
+                    title_key = title.strip().lower()
+                    if link and link in seen_links:
+                        _log_feed_item('DUPLICATE', title, source_name)
+                        continue
+                    if title_key in seen_titles:
+                        _log_feed_item('DUPLICATE', title, source_name)
+                        continue
+                    if link:
+                        seen_links.add(link)
+                    seen_titles.add(title_key)
 
                     image_url = extract_image_url(entry)
 
@@ -465,6 +591,9 @@ def parse_rss_feeds() -> List[Dict]:
 
     # Sort by timestamp (newest first)
     fresh_items.sort(key=lambda x: x['timestamp'], reverse=True)
+
+    # Fall back to fetching og:image for items the RSS feed didn't supply
+    backfill_missing_images(fresh_items)
 
     return fresh_items
 

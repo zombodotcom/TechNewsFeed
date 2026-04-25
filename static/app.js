@@ -151,9 +151,8 @@ async function fetchFeeds(retryCount) {
         renderSidebar(getSidebarItems());
         hideLoading();
 
-        // Start timers
+        // Start timer (sidebar advances together with featured now)
         startFeaturedTimer();
-        startSidebarTimer();
     } catch (err) {
         console.error('Fetch error:', err);
         if (retryCount < 5) {
@@ -263,20 +262,15 @@ function shuffleArray(arr) {
     }
 }
 
-// ---- Deduplication ----
-// Get sidebar items that don't overlap with current featured
+// ---- Sidebar = preview of next upcoming items ----
+// Always shows the next SIDEBAR_COUNT items in rotation order, so the
+// leftmost sidebar item is what becomes featured next when right-arrow
+// is pressed (or the timer fires).
 function getSidebarItems() {
     const items = [];
-    const featuredItem = storyPool[featuredIndex];
-    let idx = sidebarOffset;
-    let checked = 0;
-    while (items.length < SIDEBAR_COUNT && checked < storyPool.length) {
-        const candidate = storyPool[idx % storyPool.length];
-        if (candidate !== featuredItem) {
-            items.push(candidate);
-        }
-        idx++;
-        checked++;
+    if (!storyPool.length) return items;
+    for (let i = 1; i <= SIDEBAR_COUNT; i++) {
+        items.push(storyPool[(featuredIndex + i) % storyPool.length]);
     }
     return items;
 }
@@ -495,14 +489,7 @@ function startFeaturedTimer() {
     scheduleFeatured();
 }
 
-function startSidebarTimer() {
-    if (sidebarTimer) clearInterval(sidebarTimer);
-    sidebarTimer = setInterval(function() {
-        sidebarOffset += SIDEBAR_COUNT;
-        if (sidebarOffset >= storyPool.length) sidebarOffset = 0;
-        renderSidebar(getSidebarItems());
-    }, SIDEBAR_DURATION);
-}
+// Sidebar no longer rotates independently — it tracks featured.
 
 // ---- Featured Navigation (prev/next) ----
 function nextFeatured() {
