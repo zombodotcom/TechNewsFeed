@@ -163,6 +163,7 @@ _JUNK_KEYWORDS = {
     "DeSantis", "Vance", "Pence", "Harris",
     "Pelosi", "McConnell", "Schumer", "AOC",
     "Marjorie Taylor", "Elon Musk", "Vivek",
+    "Alex Jones", "Infowars",
     # Parties & labels
     "Republican", "GOP", "MAGA",
     "liberal", "conservative", "partisan", "bipartisan",
@@ -368,8 +369,8 @@ SCAM_TIPS = [
         "type": "scam",
         "category": "SCAM ALERT",
         "headline": "If You See These Apps — DELETE Them",
-        "action": "Cleaner Guru, Cleanup, Cleaner Kit, AI Cleaner, Clean Master, Super Cleaner. They're scams.",
-        "image": None,
+        "action": "$9 a week to do nothing. Bring your phone in — we'll remove them free.",
+        "image": "/static/scam-images/cleaner-apps-wall-of-shame.svg",
     },
     {
         "type": "scam",
