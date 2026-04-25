@@ -396,8 +396,8 @@ SCAM_TIPS = [
     {
         "type": "scam",
         "category": "SCAM ALERT",
-        "headline": "You Can Get Your Money Back",
-        "action": "Apple and Google refund scam subscriptions. Bring your phone in — we'll file it for you.",
+        "headline": "Cancel the Subscription First",
+        "action": "iPhone: Settings → Subscriptions. Android: Play Store. Then dispute with your bank.",
         "image": None,
     },
     {
