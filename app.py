@@ -111,6 +111,19 @@ _JUNK_KEYWORDS = {
     # ── Podcast promos ──
     "Vergecast", "Decoder",
 
+    # ── Sponsored / vendor whitepaper content (THN, BleepingComputer) ──
+    "webinar", "playbook", "ultimate guide", "defender's guide", "defenders guide",
+    "security posture", "operational resilience", "credential management",
+    "third-party risk", "third party risk", "best practices",
+    "evolution of ransomware", "evolution of phishing", "evolution of malware",
+    "decision engine", "authority gap", "observability",
+    "threatsday", "weekly recap", "monthly recap",
+    "as a service", "as-a-service",
+    "defense in depth", "zero trust",  # vendor speak
+    "as you think", "than you think",  # clickbait
+    "no longer enough", "not enough anymore",
+    "who's going to fix", "who is going to fix",
+
     # ── Seasonal fluff ──
     "April Fools", "April Fool",
 
@@ -189,6 +202,19 @@ _JUNK_REGEX = [
     # ── How-to / explainer ──
     r'^how to ',
     r'\bhere.s (?:how|what|why|everything)\b',
+    r'\bin \d+ steps?\b',                  # "in 3 steps"
+    r'^\[webinar\]',                       # "[Webinar] ..."
+    r'\b\+\s*\d+ new stories\b',           # "+25 New Stories" bulletin
+
+    # ── Personal review / fluff opinion pieces ──
+    r'^the most (?:exciting|amazing|incredible|beautiful)\b',
+    r'\bi.ve (?:ever )?seen .{0,20}\bin forever\b',
+    r'\bbrightened (?:up )?my\b',
+    r'\b(?:and then|then) my life\b',
+    r'^six things\b', r'^seven things\b', r'^eight things\b', r'^nine things\b',
+    r'^ten things\b', r'^five things\b', r'^four things\b', r'^three things\b',
+    r'\bthings? (?:i|we).ll remember\b',
+    r'\b(?:my|our) version of\b',
 
     # ── Entertainment / streaming ──
     r'\b(?:new|official|first|final|full) .{0,20}trailer\b',
