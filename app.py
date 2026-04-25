@@ -370,7 +370,7 @@ SCAM_TIPS = [
         "category": "SCAM ALERT",
         "headline": "If You See These Apps — DELETE Them",
         "action": "These cleaner apps are scams. Bring your phone in — we'll remove them free.",
-        "image": "/static/scam-images/cleaner-apps-wall-of-shame.svg",
+        "image": "/static/scam-images/cleaner-apps-wall-of-shame.png",
     },
     {
         "type": "scam",

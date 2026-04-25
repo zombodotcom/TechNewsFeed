@@ -314,13 +314,14 @@ class TestScamTips(unittest.TestCase):
         from app import SCAM_TIPS
         self.assertIn('Just Ask Us', SCAM_TIPS[-1]['headline'])
 
-    def test_scam_tips_images_are_svg(self):
-        """Test that all scam tip images use .svg extension."""
+    def test_scam_tips_images_are_image_files(self):
+        """Test that all scam tip images point to a valid image file."""
         from app import SCAM_TIPS
+        valid_exts = ('.svg', '.png', '.jpg', '.jpeg')
         for tip in SCAM_TIPS:
             if tip['image'] is not None:
-                self.assertTrue(tip['image'].endswith('.svg'),
-                                f"Expected .svg: {tip['image']}")
+                self.assertTrue(tip['image'].lower().endswith(valid_exts),
+                                f"Expected image extension: {tip['image']}")
 
     def test_scam_tips_api_returns_new_format(self):
         """Test /api/scam-tips returns tips with headline/action fields."""
