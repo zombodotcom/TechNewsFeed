@@ -369,7 +369,7 @@ SCAM_TIPS = [
         "type": "scam",
         "category": "SCAM ALERT",
         "headline": "If You See These Apps — DELETE Them",
-        "action": "$9 a week to do nothing. Bring your phone in — we'll remove them free.",
+        "action": "These cleaner apps are scams. Bring your phone in — we'll remove them free.",
         "image": "/static/scam-images/cleaner-apps-wall-of-shame.svg",
     },
     {
@@ -398,13 +398,6 @@ SCAM_TIPS = [
         "category": "SCAM ALERT",
         "headline": "You Can Get Your Money Back",
         "action": "Apple and Google refund scam subscriptions. Bring your phone in — we'll file it for you.",
-        "image": None,
-    },
-    {
-        "type": "scam",
-        "category": "SCAM ALERT",
-        "headline": "Don't Scan a QR Code to 'See a Photo'",
-        "action": "Scammers use fake links to link your WhatsApp to their device. They'll read everything.",
         "image": None,
     },
     {
