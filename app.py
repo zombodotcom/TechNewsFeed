@@ -133,6 +133,11 @@ _JUNK_KEYWORDS = {
     # ── Seasonal fluff ──
     "April Fools", "April Fool",
 
+    # ── Adult / NSFW content (kids walk past the screen) ──
+    "porn", "pornography", "porno", "nudes", "OnlyFans",
+    "sex tape", "sexual", "explicit content",
+    "strip club", "escort", "brothel",
+
     # ── Gaming / entertainment fluff ──
     "PlayStation", "PS5", "PS4", "Nintendo Switch",
     "Double Fine", "indie game", "indie games",
