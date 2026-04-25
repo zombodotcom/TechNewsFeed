@@ -377,7 +377,7 @@ SCAM_TIPS = [
         "category": "SCAM ALERT",
         "headline": "Cleaner Apps ARE the Virus Popups",
         "action": "That 'speed up your phone' app is what's spamming you. Delete it. We'll help.",
-        "image": None,
+        "image": "/static/scam-images/cleaner-apps-wall-of-shame.png",
     },
     {
         "type": "scam",
