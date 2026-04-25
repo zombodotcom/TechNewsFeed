@@ -409,13 +409,6 @@ SCAM_TIPS = [
     {
         "type": "scam",
         "category": "SCAM ALERT",
-        "headline": "Never Share a WhatsApp Code",
-        "action": "That 6-digit code is the only thing protecting your account. Don't forward it. Ever.",
-        "image": None,
-    },
-    {
-        "type": "scam",
-        "category": "SCAM ALERT",
         "headline": "Don't Scan a QR Code to 'See a Photo'",
         "action": "Scammers use fake links to link your WhatsApp to their device. They'll read everything.",
         "image": None,
