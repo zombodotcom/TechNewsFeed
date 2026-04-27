@@ -404,8 +404,8 @@ SCAM_TIPS = [
     {
         "type": "scam",
         "category": "SCAM ALERT",
-        "headline": "'Hi Mom, New Number' Is a Scam",
-        "action": "Voice and video can be faked now. Hang up, call the real number you know.",
+        "headline": "The 'Hi Mom, New Number' Text",
+        "action": "Scammers pose as family asking for emergency money or gift cards. Call their real number first.",
         "image": None,
     },
     {
