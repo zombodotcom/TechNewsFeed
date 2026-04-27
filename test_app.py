@@ -136,9 +136,9 @@ class TestFeedCategories(unittest.TestCase):
             self.assertIn(feed['category'], ['tech_news', 'tech_tip', 'security', 'official', 'broad_tech'])
 
     def test_rss_feeds_count(self):
-        """Test we have 8 curated feeds."""
+        """Test we have 7 curated feeds."""
         from app import RSS_FEEDS
-        self.assertEqual(len(RSS_FEEDS), 8)
+        self.assertEqual(len(RSS_FEEDS), 7)
 
     def test_badge_colors_defined(self):
         """Test that BADGE_COLORS is defined for all badges used in feeds."""

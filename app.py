@@ -45,7 +45,6 @@ with open(_config_path, 'r') as _f:
 # Curated tech news RSS feeds with categories
 RSS_FEEDS = [
     # General Tech News (editorial, not product reviews)
-    {"url": "https://www.theverge.com/rss/index.xml", "category": "tech_news", "badge": "TECH NEWS"},
     {"url": "https://feeds.arstechnica.com/arstechnica/index", "category": "tech_news", "badge": "TECH NEWS"},
     {"url": "https://www.techmeme.com/feed.xml", "category": "tech_news", "badge": "TECH NEWS"},
     # Security & Scams
@@ -143,6 +142,15 @@ _JUNK_KEYWORDS = {
     "Double Fine", "indie game", "indie games",
     "video game", "video games", "videogame", "videogames",
     "weirdest studio", "weirdest game",
+
+    # ── Smart-home / lifestyle gadget fluff ──
+    "Govee", "Philips Hue", "Nanoleaf", "LIFX",
+    "smart light", "smart lights", "smart bulb", "smart bulbs",
+    "smart plug", "smart plugs",
+    "LED strip", "LED strips",
+    "ceiling light", "ceiling lights",
+    "table lamp", "floor lamp",
+    "doubles as a",
 
     # ── Non-tech science / nature / paleontology / medical fluff ──
     "shark", "sharks", "octopus", "octopi", "parrot", "parrots",
