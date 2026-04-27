@@ -316,7 +316,6 @@ function renderFeatured(item) {
     // Add progress bar
     const progress = document.createElement('div');
     progress.className = 'featured-progress';
-    progress.id = 'featuredProgress';
     card.appendChild(progress);
 
     // Crossfade: deactivate old, activate new
@@ -343,7 +342,7 @@ function renderFeatured(item) {
     }
 
     // Start progress bar animation
-    startProgressBar(isScam ? FEATURED_SCAM_DURATION : FEATURED_DURATION);
+    startProgressBar(isScam ? FEATURED_SCAM_DURATION : FEATURED_DURATION, progress);
 }
 
 function buildNewsFeatured(item, hasImage) {
@@ -404,9 +403,8 @@ function buildScamFeatured(item, hasImage) {
 }
 
 // ---- Progress Bar ----
-function startProgressBar(duration) {
+function startProgressBar(duration, bar) {
     if (progressTimer) cancelAnimationFrame(progressTimer);
-    const bar = document.getElementById('featuredProgress');
     if (!bar) return;
     const start = performance.now();
     function tick(now) {
