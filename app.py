@@ -538,8 +538,12 @@ def extract_image_url(entry) -> Optional[str]:
         # Look for img tags
         img_pattern = r'<img[^>]+src=["\']([^"\']+)["\']'
         matches = re.findall(img_pattern, summary, re.IGNORECASE)
-        if matches:
-            return matches[0]
+        for src in matches:
+            # Techmeme embeds 124×83 thumbnails — skip so og:image backfill
+            # picks up the real article image from the source instead.
+            if 'techmeme.com' in src:
+                continue
+            return src
         
         # Look for background-image in style
         bg_pattern = r'background-image:\s*url\(["\']?([^"\']+)["\']?\)'
@@ -658,6 +662,15 @@ def parse_rss_feeds() -> List[Dict]:
                         continue
 
                     raw_link = entry.get('link', '')
+                    # Techmeme aggregates other outlets; its permalink page has
+                    # no og:image. Pull the actual source URL out of the summary
+                    # so backfill fetches the real article's image.
+                    if 'techmeme.com' in raw_link:
+                        summary_html = entry.get('summary') or entry.get('description') or ''
+                        src_match = re.search(r'<a\s+href=["\']([^"\']+)["\']', summary_html, re.IGNORECASE)
+                        if src_match and 'techmeme.com' not in src_match.group(1):
+                            raw_link = src_match.group(1)
+                            entry['link'] = raw_link
                     if _is_junk_link(raw_link):
                         logger.info(f"Filtered junk URL path: {raw_link}")
                         _log_feed_item('FILTERED', title, source_name)
@@ -666,7 +679,7 @@ def parse_rss_feeds() -> List[Dict]:
                     # Dedupe across feeds — same article often cross-posts
                     # (e.g. Ars main + Ars Science). Strip query strings so
                     # tracking params don't defeat matching.
-                    link = entry.get('link', '').split('?')[0].rstrip('/').lower()
+                    link = raw_link.split('?')[0].rstrip('/').lower()
                     title_key = title.strip().lower()
                     if link and link in seen_links:
                         _log_feed_item('DUPLICATE', title, source_name)
@@ -713,8 +726,8 @@ def parse_rss_feeds() -> List[Dict]:
     
     logger.info(f"Successfully fetched {successful_feeds}/{len(RSS_FEEDS)} feeds, {len(all_items)} total items")
 
-    # Filter out articles older than 7 days
-    cutoff = time.time() - 7 * 86400
+    # Filter out articles older than 3 days — shop TV should feel current.
+    cutoff = time.time() - 3 * 86400
     fresh_items = [item for item in all_items if item['timestamp'] >= cutoff]
     logger.info(f"After stale filter: {len(fresh_items)} items (dropped {len(all_items) - len(fresh_items)} old articles)")
 

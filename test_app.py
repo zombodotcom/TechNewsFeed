@@ -337,14 +337,14 @@ class TestScamTips(unittest.TestCase):
 
 
 class TestStaleArticleFilter(unittest.TestCase):
-    """Test that articles older than 7 days are filtered out."""
+    """Test that articles older than 3 days are filtered out."""
 
     @patch('app.feedparser.parse')
     @patch('app.RSS_FEEDS', [{"url": "https://test.com/feed", "category": "tech_news", "badge": "TECH NEWS"}])
     def test_stale_articles_dropped(self, mock_parse):
-        """Articles older than 7 days should be excluded."""
+        """Articles older than 3 days should be excluded."""
         now = time.localtime()
-        old_time = time.localtime(time.time() - 10 * 86400)  # 10 days ago
+        old_time = time.localtime(time.time() - 5 * 86400)  # 5 days ago
 
         mock_feed = MagicMock()
         mock_feed.bozo = False
@@ -381,9 +381,9 @@ class TestStaleArticleFilter(unittest.TestCase):
 
     @patch('app.feedparser.parse')
     @patch('app.RSS_FEEDS', [{"url": "https://test.com/feed", "category": "tech_news", "badge": "TECH NEWS"}])
-    def test_articles_within_7_days_kept(self, mock_parse):
-        """Articles within 7 days should be kept."""
-        recent_time = time.localtime(time.time() - 5 * 86400)  # 5 days ago
+    def test_articles_within_3_days_kept(self, mock_parse):
+        """Articles within 3 days should be kept."""
+        recent_time = time.localtime(time.time() - 1 * 86400)  # 1 day ago
 
         mock_feed = MagicMock()
         mock_feed.bozo = False

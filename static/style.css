@@ -181,12 +181,37 @@ body::before {
     max-width: 42%;
     position: relative;
     overflow: hidden;
+    background: var(--surface-bark);
 }
 
-.featured-image-wrap img {
+/* Backdrop fill: same image, blurred + dimmed, behind the foreground.
+   Lets the foreground use object-fit: contain (no cropping) without
+   leaving empty bars on the sides. */
+.featured-image-bg {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    filter: blur(36px) brightness(0.55) saturate(1.2);
+    transform: scale(1.15);
+    z-index: 0;
+}
+
+.featured-image-fg {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    z-index: 1;
+}
+
+/* Legacy single-img selector kept for any cards still using one image */
+.featured-image-wrap > img:only-child {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
     display: block;
 }
 

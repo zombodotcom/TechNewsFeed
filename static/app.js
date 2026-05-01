@@ -354,8 +354,10 @@ function buildNewsFeatured(item, hasImage) {
 
     let imageHtml = '';
     if (hasImage) {
+        const safeSrc = escapeHtml(item.image);
         imageHtml = '<div class="featured-image-wrap">' +
-            '<img src="' + escapeHtml(item.image) + '" alt="" loading="eager">' +
+            '<img src="' + safeSrc + '" alt="" aria-hidden="true" loading="eager" class="featured-image-bg">' +
+            '<img src="' + safeSrc + '" alt="" loading="eager" class="featured-image-fg">' +
             '</div>';
     } else if (item.image === undefined || item.image === null || item._imageFailed) {
         // Show placeholder with category icon
