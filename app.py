@@ -500,12 +500,28 @@ def extract_image_url(entry) -> Optional[str]:
     Returns:
         Image URL string or None if no image found
     """
-    # Method 1: Check for media:content or media:thumbnail (Media RSS)
+    # Method 1: Check for media:content or media:thumbnail (Media RSS).
+    # Many feeds publish several variants (e.g. 200px / 800px / 1600px); pick
+    # the largest so the image doesn't get upscaled and blurred on a TV.
     if hasattr(entry, 'media_content'):
+        best_url = None
+        best_w = -1
         for media in entry.media_content:
-            if media.get('type', '').startswith('image/'):
-                return media.get('url')
-    
+            if not media.get('type', '').startswith('image/'):
+                continue
+            url = media.get('url')
+            if not url:
+                continue
+            try:
+                w = int(media.get('width') or 0)
+            except (ValueError, TypeError):
+                w = 0
+            if w > best_w:
+                best_w = w
+                best_url = url
+        if best_url:
+            return best_url
+
     if hasattr(entry, 'media_thumbnail'):
         for thumb in entry.media_thumbnail:
             return thumb.get('url')
