@@ -152,6 +152,11 @@ _JUNK_KEYWORDS = {
     "table lamp", "floor lamp",
     "doubles as a",
 
+    # ── Product launches / preorders — kill the "BUY THIS NEW THING" noise
+    # without blocking actual security/breach stories about the same products.
+    "preorder", "pre-order", "pre order",
+    "first look at the", "hands-on with the",
+
     # ── Non-tech science / nature / paleontology / medical fluff ──
     "shark", "sharks", "octopus", "octopi", "parrot", "parrots",
     "kraken", "mosasaur", "dinosaur", "dinosaurs",
@@ -263,6 +268,10 @@ _JUNK_REGEX = [
     r'\bleft.wing', r'\bright.wing',
     r'\binaugur', r'\bpolling\b',
     r'\bop.ed\b', r'\bshutdown\b', r'\bprimary\b',
+
+    # ── Product-launch dating ("available from May 26", "ships in March") ──
+    r'\bavailable from (?:january|february|march|april|may|june|july|august|september|october|november|december)\b',
+    r'\bships? in (?:january|february|march|april|may|june|july|august|september|october|november|december)\b',
 ]
 
 # Build one compiled regex from both lists
@@ -283,11 +292,16 @@ def _is_junk_title(title: str) -> bool:
 
 
 # URL path segments that indicate non-tech content (gaming, entertainment, etc.)
+# Keep this conservative — security/breach news about gadgets typically lives
+# under /security/ or /news/, NOT /gadgets/ or /reviews/, so those two are safe
+# to filter wholesale. Avoid /wearables/, /cars/, /smart-home/, /audio/ here —
+# a hack story about any of those could legitimately appear in those sections.
 _JUNK_URL_SEGMENTS = (
     '/games/', '/gaming/', '/entertainment/',
     '/movies/', '/music/', '/tv/',
     '/culture/', '/podcast/',
     '/lifestyle/', '/wellness/',
+    '/gadgets/', '/reviews/',
 )
 
 
